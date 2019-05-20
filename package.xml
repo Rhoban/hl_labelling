@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package>
+  <name>hl_labelling</name>
+  <version>0.0.1</version>
+  <description>Experimental package to label RoboCup Humanoid League data</description>
+
+  <maintainer email="lhofer@labri.fr">Ludovic Hofer</maintainer>
+
+  <license>LGPLv3</license>
+
+  <author email="lhofer@labri.fr">Ludovic Hofer</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>hl_monitoring</build_depend>
+  <build_depend>rhoban_utils</build_depend>
+
+  <run_depend>hl_monitoring</run_depend>
+  <run_depend>rhoban_utils</run_depend>
+</package>
