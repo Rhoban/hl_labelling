@@ -167,6 +167,8 @@ int main()
     cv::Mat display_img = calibrated_img.getImg().clone();
     CameraMetaInformation camera_meta = calibrated_img.getCameraInformation();
     Eigen::Affine3d pose = log.getCameraPose(time_stamp);
+    Eigen::Vector3d camera_in_field = pose.inverse() * Eigen::Vector3d::Zero();
+    std::cout << idx << ": Camera in field " << camera_in_field.transpose() << std::endl;
     setProtobufFromAffine(pose, camera_meta.mutable_pose());
     log.manager.getField().tagLines(camera_meta, &display_img, cv::Scalar(0, 0, 0), 2.0, 20);
     cv::imshow("display_img", display_img);
@@ -183,6 +185,9 @@ int main()
         bool success = pose_solver.solve(&manual_pose);
         if (success)
         {
+          Eigen::Affine3d field_to_camera = getAffineFromProtobuf(manual_pose);
+          Eigen::Vector3d camera_in_field = field_to_camera.inverse() * Eigen::Vector3d::Zero();
+          std::cout << idx << ": Calibration : Camera in field " << camera_in_field.transpose() << std::endl;
           log.pushManualPose(time_stamp, manual_pose);
         }
         break;
