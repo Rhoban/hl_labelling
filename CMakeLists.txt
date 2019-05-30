@@ -1,18 +1,12 @@
 cmake_minimum_required(VERSION 2.8)
 project(hl_labelling)
 
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-set(CMAKE_AUTOOUIC ON)
-
 find_package(OpenCV REQUIRED)
 
 find_package(catkin REQUIRED COMPONENTS
-  qt_monitoring
+  hl_monitoring
   rhoban_utils
   )
-
-find_package(Qt5 REQUIRED COMPONENTS MultimediaWidgets)
 
 #Enable C++17
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -std=c++17")
@@ -20,7 +14,7 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -std=c++17")
 catkin_package(
   INCLUDE_DIRS src
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS qt_monitoring rhoban_utils
+  CATKIN_DEPENDS hl_monitoring rhoban_utils
   )
 
 include_directories(${catkin_INCLUDE_DIRS} src)
@@ -40,7 +34,6 @@ foreach (DIRECTORY ${SOURCES_DIRECTORIES})
 endforeach (DIRECTORY)
 
 add_library (${PROJECT_NAME} SHARED ${ALL_SOURCES})
-qt5_use_modules(${PROJECT_NAME} MultimediaWidgets)
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
 
 add_executable(rhoban_dynamic_camera_labelling_tool apps/rhoban_dynamic_camera_labelling_tool.cpp)
