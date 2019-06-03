@@ -16,6 +16,9 @@ public:
 
   void startPoseCalibration();
 
+protected:
+  void updateTime() override;
+
 private:
   /**
    * Update the pose of all the frames between previous and next position from ts

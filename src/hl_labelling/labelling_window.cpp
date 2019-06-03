@@ -19,6 +19,20 @@ LabellingWindow::LabellingWindow(std::unique_ptr<hl_monitoring::ReplayImageProvi
   importMetaData();
 }
 
+void LabellingWindow::updateTime()
+{
+  bool valid_frame = false;
+  while (playing && !valid_frame)
+  {
+    ReplayViewer::updateTime();
+    FrameEntry frame = provider->getFrameEntry(now);
+    if (frame.has_status() && frame.status() == FrameStatus::MOVING)
+    {
+      valid_frame = true;
+    }
+  }
+}
+
 void LabellingWindow::paintImg()
 {
   int frame_index = provider->getIndex(now);
