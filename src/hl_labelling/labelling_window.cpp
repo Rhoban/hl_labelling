@@ -35,6 +35,7 @@ void LabellingWindow::updateTime()
 
 void LabellingWindow::paintImg()
 {
+  ReplayViewer::paintImg();
   int frame_index = provider->getIndex(now);
   uint64_t frame_ts = provider->getTimeStamp(frame_index);
   CameraMetaInformation information = calibrated_img.getCameraInformation();
