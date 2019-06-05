@@ -12,12 +12,12 @@ find_package(catkin REQUIRED COMPONENTS
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -std=c++17")
 
 catkin_package(
-  INCLUDE_DIRS src
+  INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
   CATKIN_DEPENDS hl_monitoring rhoban_utils
   )
 
-include_directories(${catkin_INCLUDE_DIRS} src)
+include_directories(${catkin_INCLUDE_DIRS} include)
 
 set(SOURCES_DIRECTORIES
   src/hl_labelling
