@@ -115,6 +115,10 @@ void VideoLabellingManager::importLabels(const MovieLabelCollection& movie)
   {
     throw std::runtime_error(HL_DEBUG + " movie camera name missing");
   }
+  if (video_name == "")
+  {
+    video_name = movie.camera_name();
+  }
   if (movie.camera_name() != video_name)
   {
     throw std::runtime_error(HL_DEBUG + " invalid video name for label: '" + movie.camera_name() +
