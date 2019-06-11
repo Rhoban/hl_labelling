@@ -16,14 +16,11 @@ int main(int argc, char** argv)
                                          cmd);
   TCLAP::ValueArg<std::string> metadata_arg("m", "metadata", "Metadata of the video to be labelled", true, "metadata",
                                             "metadata", cmd);
-  TCLAP::ValueArg<std::string> name_arg("n", "name", "Name of the video to be labelled", false, "unknown", "video_name",
-                                        cmd);
   cmd.parse(argc, argv);
 
   std::unique_ptr<ReplayImageProvider> image_provider(
       new ReplayImageProvider(video_arg.getValue(), metadata_arg.getValue()));
   LabellingWindow window(std::move(image_provider), "calibration_tool");
-  window.labelling_manager.setVideoName(name_arg.getValue());
   if (input_arg.isSet())
   {
     hl_communication::MovieLabelCollection labels;

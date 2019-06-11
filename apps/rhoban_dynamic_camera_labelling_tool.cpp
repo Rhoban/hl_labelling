@@ -1,11 +1,12 @@
+#include <hl_communication/utils.h>
 #include <hl_monitoring/manual_pose_solver.h>
 #include <hl_monitoring/monitoring_manager.h>
-#include <hl_monitoring/utils.h>
 #include <rhoban_utils/history/history.h>
 
 #include <Eigen/Geometry>
 #include <opencv2/highgui.hpp>
 
+using namespace hl_communication;
 using namespace hl_monitoring;
 
 class RhobanLog

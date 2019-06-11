@@ -3,18 +3,17 @@
 #include <hl_monitoring/manual_pose_solver.h>
 #include <hl_monitoring/utils.h>
 
+#include <google/protobuf/util/message_differencer.h>
+
 using namespace hl_communication;
 using namespace hl_monitoring;
+
+using google::protobuf::util::MessageDifferencer;
 
 namespace hl_labelling
 {
 VideoLabellingManager::VideoLabellingManager() : relative_pose_history(-1)
 {
-}
-
-void VideoLabellingManager::setVideoName(const std::string& new_name)
-{
-  video_name = new_name;
 }
 
 int VideoLabellingManager::getPreviousPoseIdx(uint64_t timestamp)
@@ -80,8 +79,12 @@ Eigen::Affine3d VideoLabellingManager::getCorrectedCameraPose(uint64_t timestamp
   return rhoban_utils::averageFrames(pred_from_prev, pred_from_next, w_next);
 }
 
-void VideoLabellingManager::importMetaData(const hl_monitoring::VideoMetaInformation& new_meta_information)
+void VideoLabellingManager::importMetaData(const hl_communication::VideoMetaInformation& new_meta_information)
 {
+  if (!new_meta_information.has_source_id())
+  {
+    throw std::runtime_error(HL_DEBUG + " no source id in meta_information");
+  }
   meta_information = new_meta_information;
   for (const FrameEntry& frame_entry : meta_information.frames())
   {
@@ -111,18 +114,14 @@ void VideoLabellingManager::importLabels(const MovieLabelCollection& movie)
   {
     throw std::logic_error(HL_DEBUG + " muliple labelers detected, not supported now");
   }
-  if (!movie.has_camera_name())
+  if (!movie.has_source_id())
   {
-    throw std::runtime_error(HL_DEBUG + " movie camera name missing");
+    throw std::logic_error(HL_DEBUG + " 'movie' has no source id");
   }
-  if (video_name == "")
+  // TODO: check video_name
+  if (MessageDifferencer::Equals(movie.source_id(), meta_information.source_id()))
   {
-    video_name = movie.camera_name();
-  }
-  if (movie.camera_name() != video_name)
-  {
-    throw std::runtime_error(HL_DEBUG + " invalid video name for label: '" + movie.camera_name() +
-                             "' while expecting '" + video_name + "'");
+    throw std::runtime_error(HL_DEBUG + " Mismatch between label source_id and meta_information source_id");
   }
   for (const LabelCollection& label_collection : movie.label_collections())
   {
@@ -149,11 +148,11 @@ void VideoLabellingManager::importLabels(const MovieLabelCollection& movie)
       }
     }
   }
-}
+}  // namespace hl_labelling
 
 void VideoLabellingManager::exportLabels(MovieLabelCollection* movie)
 {
-  movie->set_camera_name(video_name);
+  movie->mutable_source_id()->CopyFrom(meta_information.source_id());
   LabelCollection* label_collection = movie->add_label_collections();
   label_collection->mutable_labeler_identity()->set_nick_name("unknown");
   for (const auto& frame_entry : labels)

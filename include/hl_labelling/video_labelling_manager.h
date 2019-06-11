@@ -1,6 +1,6 @@
 #pragma once
 #include <hl_communication/labelling.pb.h>
-#include <hl_monitoring/camera.pb.h>
+#include <hl_communication/camera.pb.h>
 #include <rhoban_utils/history/history.h>
 
 namespace hl_labelling
@@ -13,12 +13,12 @@ class VideoLabellingManager
 public:
   VideoLabellingManager();
 
-  void setVideoName(const std::string& new_name);
+  void setSourceID(const hl_communication::VideoSourceID& new_id);
 
   /**
    * Reads the metadata from manager to populate the histories
    */
-  void importMetaData(const hl_monitoring::VideoMetaInformation& meta_information);
+  void importMetaData(const hl_communication::VideoMetaInformation& meta_information);
 
   void pushMsg(const hl_communication::LabelMsg& msg);
   void pushManualPose(int frame_index, const Eigen::Affine3d& camera_from_field);
@@ -44,11 +44,6 @@ private:
   int getNextPoseIdx(uint64_t timestamp);
 
   /**
-   * The name given to the video
-   */
-  std::string video_name;
-
-  /**
    * Represent the relative pose estimated by robot,imu,etc..
    */
   rhoban_utils::HistoryPose relative_pose_history;
@@ -56,7 +51,7 @@ private:
   /**
    * Meta-information of the video associated to the labels
    */
-  hl_monitoring::VideoMetaInformation meta_information;
+  hl_communication::VideoMetaInformation meta_information;
 
   /**
    * The existing labels ordered first by camera_source and then by frame_index
