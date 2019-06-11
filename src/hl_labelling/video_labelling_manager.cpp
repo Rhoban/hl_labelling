@@ -1,7 +1,6 @@
 #include <hl_labelling/video_labelling_manager.h>
 #include <hl_communication/utils.h>
 #include <hl_monitoring/manual_pose_solver.h>
-#include <hl_monitoring/utils.h>
 
 #include <google/protobuf/util/message_differencer.h>
 

@@ -2,7 +2,6 @@
 
 #include <hl_communication/utils.h>
 #include <hl_monitoring/manual_pose_solver.h>
-#include <hl_monitoring/utils.h>
 
 #include <iostream>
 
