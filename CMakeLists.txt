@@ -36,9 +36,6 @@ endforeach (DIRECTORY)
 add_library (${PROJECT_NAME} SHARED ${ALL_SOURCES})
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
 
-add_executable(rhoban_dynamic_camera_labelling_tool apps/rhoban_dynamic_camera_labelling_tool.cpp)
-target_link_libraries(rhoban_dynamic_camera_labelling_tool ${catkin_LIBRARIES} ${PROJECT_NAME})
-
 add_executable(labelling_tool apps/labelling_tool.cpp)
 target_link_libraries(labelling_tool ${catkin_LIBRARIES} ${PROJECT_NAME})
 

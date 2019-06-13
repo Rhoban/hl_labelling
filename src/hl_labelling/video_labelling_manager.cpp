@@ -89,7 +89,7 @@ void VideoLabellingManager::importMetaData(const hl_communication::VideoMetaInfo
   {
     const Pose3D& pose = frame_entry.pose();
     Eigen::Affine3d camera_from_world = getAffineFromProtobuf(pose);
-    relative_pose_history.pushValue(frame_entry.time_stamp(), camera_from_world);
+    relative_pose_history.pushValue(frame_entry.monotonic_ts(), camera_from_world);
   }
 }
 
