@@ -16,5 +16,16 @@ public:
 
 protected:
   void updateTime() override;
+
+  void treatMouseEvent(int event, int x, int y, int flags) override;
+
+  void updateMode(int new_mode);
+  void updateObjectID(int new_id);
+  static void onModeTrackbarUpdate(int new_pos, void* ptr);
+  static void onObjectIDTrackbarUpdate(int new_id, void* ptr);
+
+  int mode;
+
+  int object_id;
 };
 }  // namespace hl_labelling

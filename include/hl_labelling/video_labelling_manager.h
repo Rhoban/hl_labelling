@@ -20,11 +20,19 @@ public:
    */
   void importMetaData(const hl_communication::VideoMetaInformation& meta_information);
 
-  void pushMsg(const hl_communication::LabelMsg& msg);
+  /**
+   * ball_radius: [m]
+   */
+  void pushMsg(const hl_communication::LabelMsg& msg, double ball_radius);
   void pushManualPose(int frame_index, const Eigen::Affine3d& camera_from_field);
 
   void importLabels(const hl_communication::MovieLabelCollection& movie);
   void exportLabels(hl_communication::MovieLabelCollection* movie);
+
+  /**
+   * Get the position of the balls in the field
+   */
+  std::map<int, Eigen::Vector3d> getBalls(uint64_t timestamp);
 
   /**
    * Return the pose of the camera in field referential based on two elements:
@@ -57,6 +65,12 @@ private:
    * The existing labels ordered first by camera_source and then by frame_index
    */
   std::map<int, hl_communication::LabelMsg> labels;
+
+  /**
+   * Position of the labelled balls in field referential
+   * TODO: a bool history could be added to say if ball is present or not
+   */
+  std::map<int, std::unique_ptr<rhoban_utils::HistoryVector3d>> balls;
 
   /**
    * Poses obtained through manual estimation

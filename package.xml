@@ -13,8 +13,8 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <build_depend>hl_monitoring</build_depend>
-  <build_depend>rhoban_utils</build_depend>
+  <build_depend>robot_model</build_depend>
 
   <run_depend>hl_monitoring</run_depend>
-  <run_depend>rhoban_utils</run_depend>
+  <run_depend>robot_model</run_depend>
 </package>

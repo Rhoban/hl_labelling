@@ -1,7 +1,11 @@
 #include <hl_labelling/video_labelling_manager.h>
+#include <hl_communication/labelling_utils.h>
 #include <hl_communication/utils.h>
 #include <hl_monitoring/manual_pose_solver.h>
+#include <hl_labelling/utils.h>
+#include <robot_model/camera_model.h>
 
+#include <google/protobuf/util/json_util.h>
 #include <google/protobuf/util/message_differencer.h>
 
 using namespace hl_communication;
@@ -89,17 +93,43 @@ void VideoLabellingManager::importMetaData(const hl_communication::VideoMetaInfo
   {
     const Pose3D& pose = frame_entry.pose();
     Eigen::Affine3d camera_from_world = getAffineFromProtobuf(pose);
-    relative_pose_history.pushValue(frame_entry.monotonic_ts(), camera_from_world);
+    relative_pose_history.pushValue(frame_entry.utc_ts(), camera_from_world);
   }
 }
 
-void VideoLabellingManager::pushMsg(const LabelMsg& msg)
+void VideoLabellingManager::pushMsg(const LabelMsg& msg, double ball_radius)
 {
   if (!msg.has_frame_index())
     throw std::logic_error(HL_DEBUG + "message has no frame index");
-  if (labels.count(msg.frame_index()) > 0)
-    throw std::logic_error(HL_DEBUG + "merge of messages is not implemented yet");
-  labels[msg.frame_index()] = msg;
+  uint32_t frame_index = msg.frame_index();
+  uint64_t utc_ts = getTimeStamp(meta_information, frame_index, true);
+  exportLabel(msg, &(labels[frame_index]));
+  for (const BallMsg& ball : msg.balls())
+  {
+    if (!ball.has_ball_id())
+      throw std::logic_error(HL_DEBUG + "received a ball without id");
+    Eigen::Affine3d camera_from_field = getCorrectedCameraPose(utc_ts);
+    rhoban::CameraModel camera_model = intrinsicParametersToCameraModel(meta_information.camera_parameters());
+    // Height of the ball is determined according to the ball radius
+    rhoban_geometry::Plane ball_plane_in_field(Eigen::Vector3d::UnitZ(), ball_radius);
+    cv::Point2f img_pos(ball.center().x(), ball.center().y());
+    Eigen::Vector3d ball_in_field;
+    bool success =
+        camera_model.getPosFromPixelAndPlane(img_pos, ball_plane_in_field, &ball_in_field, camera_from_field.inverse());
+    if (success)
+    {
+      int ball_id = ball.ball_id();
+      if (balls.count(ball_id) == 0)
+      {
+        balls[ball_id] = std::unique_ptr<rhoban_utils::HistoryVector3d>(new rhoban_utils::HistoryVector3d(-1));
+      }
+      balls[ball_id]->pushValue(utc_ts, ball_in_field);
+    }
+    else
+    {
+      std::cerr << "Failed to get position of ball at " << img_pos << std::endl;
+    }
+  }
 }
 
 void VideoLabellingManager::pushManualPose(int frame_index, const Eigen::Affine3d& camera_from_field)
@@ -117,10 +147,13 @@ void VideoLabellingManager::importLabels(const MovieLabelCollection& movie)
   {
     throw std::logic_error(HL_DEBUG + " 'movie' has no source id");
   }
-  // TODO: check video_name
-  if (MessageDifferencer::Equals(movie.source_id(), meta_information.source_id()))
+  if (!MessageDifferencer::Equals(movie.source_id(), meta_information.source_id()))
   {
-    throw std::runtime_error(HL_DEBUG + " Mismatch between label source_id and meta_information source_id");
+    std::string movie_json, meta_json;
+    google::protobuf::util::MessageToJsonString(movie.source_id(), &movie_json);
+    google::protobuf::util::MessageToJsonString(meta_information.source_id(), &meta_json);
+    throw std::runtime_error(HL_DEBUG + " Mismatch between label source_id " + movie_json +
+                             " and meta_information source_id " + meta_json);
   }
   for (const LabelCollection& label_collection : movie.label_collections())
   {
@@ -147,7 +180,7 @@ void VideoLabellingManager::importLabels(const MovieLabelCollection& movie)
       }
     }
   }
-}  // namespace hl_labelling
+}
 
 void VideoLabellingManager::exportLabels(MovieLabelCollection* movie)
 {
@@ -158,6 +191,16 @@ void VideoLabellingManager::exportLabels(MovieLabelCollection* movie)
   {
     label_collection->add_labels()->CopyFrom(frame_entry.second);
   }
+}
+
+std::map<int, Eigen::Vector3d> VideoLabellingManager::getBalls(uint64_t timestamp)
+{
+  std::map<int, Eigen::Vector3d> result;
+  for (const auto& entry : balls)
+  {
+    result[entry.first] = entry.second->interpolate(timestamp);
+  }
+  return result;
 }
 
 }  // namespace hl_labelling
