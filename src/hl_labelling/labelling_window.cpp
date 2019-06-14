@@ -20,11 +20,16 @@ namespace hl_labelling
 {
 LabellingWindow::LabellingWindow(std::unique_ptr<hl_monitoring::ReplayImageProvider> provider_,
                                  const std::string& window_name)
-  : ReplayViewer(std::move(provider_), window_name, false), mode(0)
+  : ReplayViewer(std::move(provider_), window_name, false), mode(0), object_id(0), team_id(0)
 {
   addBinding('c', "Run pose calibration for current frame", [this]() { this->startPoseCalibration(); });
   labelling_manager.importMetaData(provider->getMetaInformation());
-  cv::createTrackbar("mode", window_name, &mode, 2, &onModeTrackbarUpdate, this);
+  cv::createTrackbar("mode", window_name, &mode, 2,
+                     [](int new_value, void* ptr) { ((LabellingWindow*)ptr)->updateMode(new_value); }, this);
+  cv::createTrackbar("objectID", window_name, &object_id, 6,
+                     [](int new_value, void* ptr) { ((LabellingWindow*)ptr)->updateObjectID(new_value); }, this);
+  cv::createTrackbar("teamID", window_name, &team_id, 30,
+                     [](int new_value, void* ptr) { ((LabellingWindow*)ptr)->updateTeamID(new_value); }, this);
 }
 
 void LabellingWindow::updateTime()
@@ -118,14 +123,9 @@ void LabellingWindow::updateObjectID(int new_id)
   object_id = new_id;
 }
 
-void LabellingWindow::onModeTrackbarUpdate(int new_mode, void* ptr)
+void LabellingWindow::updateTeamID(int new_id)
 {
-  ((LabellingWindow*)(ptr))->updateMode(new_mode);
-}
-
-void LabellingWindow::onObjectIDTrackbarUpdate(int new_id, void* ptr)
-{
-  ((LabellingWindow*)(ptr))->updateObjectID(new_id);
+  object_id = new_id;
 }
 
 }  // namespace hl_labelling

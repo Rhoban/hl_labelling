@@ -21,11 +21,18 @@ protected:
 
   void updateMode(int new_mode);
   void updateObjectID(int new_id);
-  static void onModeTrackbarUpdate(int new_pos, void* ptr);
-  static void onObjectIDTrackbarUpdate(int new_id, void* ptr);
+  void updateTeamID(int new_id);
 
   int mode;
 
+  /**
+   * For both robots and balls
+   */
   int object_id;
+
+  /**
+   * For robots
+   */
+  int team_id;
 };
 }  // namespace hl_labelling
