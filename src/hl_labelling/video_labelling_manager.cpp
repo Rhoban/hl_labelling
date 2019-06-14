@@ -106,29 +106,7 @@ void VideoLabellingManager::pushMsg(const LabelMsg& msg, double ball_radius)
   exportLabel(msg, &(labels[frame_index]));
   for (const BallMsg& ball : msg.balls())
   {
-    if (!ball.has_ball_id())
-      throw std::logic_error(HL_DEBUG + "received a ball without id");
-    Eigen::Affine3d camera_from_field = getCorrectedCameraPose(utc_ts);
-    rhoban::CameraModel camera_model = intrinsicParametersToCameraModel(meta_information.camera_parameters());
-    // Height of the ball is determined according to the ball radius
-    rhoban_geometry::Plane ball_plane_in_field(Eigen::Vector3d::UnitZ(), ball_radius);
-    cv::Point2f img_pos(ball.center().x(), ball.center().y());
-    Eigen::Vector3d ball_in_field;
-    bool success =
-        camera_model.getPosFromPixelAndPlane(img_pos, ball_plane_in_field, &ball_in_field, camera_from_field.inverse());
-    if (success)
-    {
-      int ball_id = ball.ball_id();
-      if (balls.count(ball_id) == 0)
-      {
-        balls[ball_id] = std::unique_ptr<rhoban_utils::HistoryVector3d>(new rhoban_utils::HistoryVector3d(-1));
-      }
-      balls[ball_id]->pushValue(utc_ts, ball_in_field);
-    }
-    else
-    {
-      std::cerr << "Failed to get position of ball at " << img_pos << std::endl;
-    }
+    pushBall(utc_ts, ball, ball_radius);
   }
 }
 
@@ -137,7 +115,34 @@ void VideoLabellingManager::pushManualPose(int frame_index, const Eigen::Affine3
   manual_poses[frame_index] = camera_from_field;
 }
 
-void VideoLabellingManager::importLabels(const MovieLabelCollection& movie)
+void VideoLabellingManager::pushBall(uint64_t utc_ts, const BallMsg& ball, double ball_radius)
+{
+  if (!ball.has_ball_id())
+    throw std::logic_error(HL_DEBUG + "cannot use a ball without ball_id");
+  Eigen::Affine3d camera_from_field = getCorrectedCameraPose(utc_ts);
+  rhoban::CameraModel camera_model = intrinsicParametersToCameraModel(meta_information.camera_parameters());
+  // Height of the ball is determined according to the ball radius
+  rhoban_geometry::Plane ball_plane_in_field(Eigen::Vector3d::UnitZ(), ball_radius);
+  cv::Point2f img_pos(ball.center().x(), ball.center().y());
+  Eigen::Vector3d ball_in_field;
+  bool success =
+      camera_model.getPosFromPixelAndPlane(img_pos, ball_plane_in_field, &ball_in_field, camera_from_field.inverse());
+  if (success)
+  {
+    int ball_id = ball.ball_id();
+    if (balls.count(ball_id) == 0)
+    {
+      balls[ball_id] = std::unique_ptr<rhoban_utils::HistoryVector3d>(new rhoban_utils::HistoryVector3d(-1));
+    }
+    balls[ball_id]->pushValue(utc_ts, ball_in_field);
+  }
+  else
+  {
+    std::cerr << "Failed to get position of ball at " << img_pos << std::endl;
+  }
+}
+
+void VideoLabellingManager::importLabels(const MovieLabelCollection& movie, double ball_radius)
 {
   if (movie.label_collections_size() > 1)
   {
@@ -157,6 +162,7 @@ void VideoLabellingManager::importLabels(const MovieLabelCollection& movie)
   }
   for (const LabelCollection& label_collection : movie.label_collections())
   {
+    // First, load all pose and labels
     for (const LabelMsg& label : label_collection.labels())
     {
       if (!label.has_frame_index())
@@ -175,9 +181,22 @@ void VideoLabellingManager::importLabels(const MovieLabelCollection& movie)
         Pose3D pose;
         if (ManualPoseSolver::solvePose(matches, meta_information.camera_parameters(), &pose))
         {
-          manual_poses[frame_index] = getAffineFromProtobuf(pose);
+          pushManualPose(frame_index, getAffineFromProtobuf(pose));
+        }
+        else
+        {
+          std::cout << "Failed to solve pose" << std::endl;
         }
       }
+    }
+  }
+  // Finally update balls in field
+  for (const auto& entry : labels)
+  {
+    uint64_t utc_ts = meta_information.frames(entry.first).utc_ts();
+    for (const BallMsg& ball : entry.second.balls())
+    {
+      pushBall(utc_ts, ball, ball_radius);
     }
   }
 }

@@ -25,7 +25,7 @@ int main(int argc, char** argv)
   {
     hl_communication::MovieLabelCollection labels;
     hl_communication::readFromFile(input_arg.getValue(), &labels);
-    window.labelling_manager.importLabels(labels);
+    window.labelling_manager.importLabels(labels, window.field.ball_radius);
   }
   window.run();
   hl_communication::MovieLabelCollection labels;

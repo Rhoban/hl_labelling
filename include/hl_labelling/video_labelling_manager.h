@@ -7,6 +7,8 @@ namespace hl_labelling
 {
 /**
  * Manages all the labels of a single video, can include relative pose information regarding the camera
+ *
+ * TODO: find another solution for ball_radius
  */
 class VideoLabellingManager
 {
@@ -25,8 +27,9 @@ public:
    */
   void pushMsg(const hl_communication::LabelMsg& msg, double ball_radius);
   void pushManualPose(int frame_index, const Eigen::Affine3d& camera_from_field);
+  void pushBall(uint64_t utc_ts, const hl_communication::BallMsg& ball, double ball_radius);
 
-  void importLabels(const hl_communication::MovieLabelCollection& movie);
+  void importLabels(const hl_communication::MovieLabelCollection& movie, double ball_radius);
   void exportLabels(hl_communication::MovieLabelCollection* movie);
 
   /**
