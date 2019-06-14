@@ -29,6 +29,11 @@ public:
   void pushManualPose(int frame_index, const Eigen::Affine3d& camera_from_field);
   void pushBall(uint64_t utc_ts, const hl_communication::BallMsg& ball, double ball_radius);
 
+  /**
+   * Remove all ball labels from the current labelCollection
+   */
+  void clearBalls();
+
   void importLabels(const hl_communication::MovieLabelCollection& movie, double ball_radius);
   void exportLabels(hl_communication::MovieLabelCollection* movie);
 

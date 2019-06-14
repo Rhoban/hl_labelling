@@ -7,7 +7,8 @@ namespace hl_labelling
 class LabellingWindow : public hl_monitoring::ReplayViewer
 {
 public:
-  LabellingWindow(std::unique_ptr<hl_monitoring::ReplayImageProvider> manager, const std::string& window_name);
+  LabellingWindow(std::unique_ptr<hl_monitoring::ReplayImageProvider> manager, const std::string& window_name,
+                  bool moving_frames_only);
 
   void paintImg() override;
   void startPoseCalibration();
@@ -19,11 +20,20 @@ protected:
 
   void treatMouseEvent(int event, int x, int y, int flags) override;
 
-  void updateMode(int new_mode);
+  void updateTagMode(int new_mode);
+  void updateViewMode(int new_mode);
   void updateObjectID(int new_id);
   void updateTeamID(int new_id);
 
-  int mode;
+  /**
+   * Control the features painted on the image
+   */
+  int view_mode;
+
+  /**
+   * Control the features which are tagged
+   */
+  int tag_mode;
 
   /**
    * For both robots and balls
@@ -34,5 +44,10 @@ protected:
    * For robots
    */
   int team_id;
+
+  /**
+   * When enabled, all the 'static' and shaking frames are ignored
+   */
+  bool moving_frames_only;
 };
 }  // namespace hl_labelling

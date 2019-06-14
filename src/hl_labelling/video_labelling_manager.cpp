@@ -110,6 +110,15 @@ void VideoLabellingManager::pushMsg(const LabelMsg& msg, double ball_radius)
   }
 }
 
+void VideoLabellingManager::clearBalls()
+{
+  balls.clear();
+  for (auto& entry : labels)
+  {
+    entry.second.clear_balls();
+  }
+}
+
 void VideoLabellingManager::pushManualPose(int frame_index, const Eigen::Affine3d& camera_from_field)
 {
   manual_poses[frame_index] = camera_from_field;

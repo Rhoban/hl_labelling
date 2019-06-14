@@ -12,20 +12,29 @@
 using namespace hl_communication;
 using namespace hl_monitoring;
 
-#define MODE_FIELD 0
-#define MODE_BALL 1
-#define MODE_ROBOT 2
+#define MODE_ALL 0
+#define MODE_FIELD 1
+#define MODE_BALL 2
+#define MODE_ROBOT 3
 
 namespace hl_labelling
 {
 LabellingWindow::LabellingWindow(std::unique_ptr<hl_monitoring::ReplayImageProvider> provider_,
-                                 const std::string& window_name)
-  : ReplayViewer(std::move(provider_), window_name, false), mode(0), object_id(0), team_id(0)
+                                 const std::string& window_name, bool moving_frames_only_)
+  : ReplayViewer(std::move(provider_), window_name, false)
+  , view_mode(MODE_ALL)
+  , tag_mode(MODE_FIELD)
+  , object_id(0)
+  , team_id(0)
+  , moving_frames_only(moving_frames_only_)
 {
   addBinding('c', "Run pose calibration for current frame", [this]() { this->startPoseCalibration(); });
   labelling_manager.importMetaData(provider->getMetaInformation());
-  cv::createTrackbar("mode", window_name, &mode, 2,
-                     [](int new_value, void* ptr) { ((LabellingWindow*)ptr)->updateMode(new_value); }, this);
+  cv::createTrackbar("viewMode", window_name, &view_mode, 3,
+                     [](int new_value, void* ptr) { ((LabellingWindow*)ptr)->updateTagMode(new_value); }, this);
+  cv::createTrackbar("tagMode", window_name, &tag_mode, 3,
+                     [](int new_value, void* ptr) { ((LabellingWindow*)ptr)->updateTagMode(new_value); }, this);
+  cv::setTrackbarMin("tagMode", window_name, 1);
   cv::createTrackbar("objectID", window_name, &object_id, 6,
                      [](int new_value, void* ptr) { ((LabellingWindow*)ptr)->updateObjectID(new_value); }, this);
   cv::createTrackbar("teamID", window_name, &team_id, 30,
@@ -40,7 +49,7 @@ void LabellingWindow::updateTime()
     ReplayViewer::updateTime();
     FrameEntry frame = provider->getFrameEntry(now);
     // TODO: depending on labelling mode, it might be interesting to tag STATIC frames as well
-    if (frame.has_status() && frame.status() == FrameStatus::MOVING)
+    if (!moving_frames_only || (frame.has_status() && frame.status() == FrameStatus::MOVING))
     {
       valid_frame = true;
     }
@@ -54,23 +63,22 @@ void LabellingWindow::paintImg()
   uint64_t frame_ts = provider->getTimeStamp(frame_index);
   CameraMetaInformation information = calibrated_img.getCameraInformation();
   setProtobufFromAffine(labelling_manager.getCorrectedCameraPose(frame_ts), information.mutable_pose());
-  switch (mode)
+  if (view_mode == MODE_ALL || view_mode == MODE_FIELD)
   {
-    case MODE_FIELD:
-      field.tagLines(information, &display_img, cv::Scalar(0, 0, 0), 1, 10);
-      break;
-    case MODE_BALL:
-      for (const auto& entry : labelling_manager.getBalls(frame_ts))
+    field.tagLines(information, &display_img, cv::Scalar(0, 0, 0), 1, 10);
+  }
+  if (view_mode == MODE_ALL || view_mode == MODE_BALL)
+  {
+    for (const auto& entry : labelling_manager.getBalls(frame_ts))
+    {
+      int ball_id = entry.first;
+      const Eigen::Vector3d& ball_in_field = entry.second;
+      cv::Point2f ball_in_img;
+      if (fieldToImg(eigen2CV(ball_in_field), information, &ball_in_img))
       {
-        int ball_id = entry.first;
-        const Eigen::Vector3d& ball_in_field = entry.second;
-        cv::Point2f ball_in_img;
-        if (fieldToImg(eigen2CV(ball_in_field), information, &ball_in_img))
-        {
-          cv::circle(display_img, ball_in_img, 3, cv::Scalar(0, 0, 255), CV_FILLED, cv::LINE_AA);
-        }
+        cv::circle(display_img, ball_in_img, 3, cv::Scalar(0, 0, 255), CV_FILLED, cv::LINE_AA);
       }
-      break;
+    }
   }
 }
 
@@ -100,7 +108,7 @@ void LabellingWindow::startPoseCalibration()
 void LabellingWindow::treatMouseEvent(int event, int x, int y, int flags)
 {
   (void)flags;
-  if (mode == MODE_BALL && event == cv::EVENT_LBUTTONDOWN)
+  if (tag_mode == MODE_BALL && event == cv::EVENT_LBUTTONDOWN)
   {
     hl_communication::LabelMsg label;
     int frame_index = provider->getIndex(now);
@@ -113,9 +121,14 @@ void LabellingWindow::treatMouseEvent(int event, int x, int y, int flags)
   }
 }
 
-void LabellingWindow::updateMode(int new_mode)
+void LabellingWindow::updateTagMode(int new_mode)
 {
-  mode = new_mode;
+  tag_mode = new_mode;
+}
+
+void LabellingWindow::updateViewMode(int new_mode)
+{
+  view_mode = new_mode;
 }
 
 void LabellingWindow::updateObjectID(int new_id)
