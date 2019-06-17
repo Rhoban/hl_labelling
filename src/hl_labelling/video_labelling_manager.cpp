@@ -148,6 +148,15 @@ void VideoLabellingManager::importLabels(const MovieLabelCollection& movie)
     if (movie.has_video_meta_information())
     {
       meta_information.CopyFrom(movie.video_meta_information());
+      for (int idx = 0; idx < meta_information.frames_size(); idx++)
+      {
+        const FrameEntry& frame_entry = meta_information.frames(idx);
+        if (frame_entry.has_pose())
+        {
+          Eigen::Affine3d camera_from_field = getAffineFromProtobuf(frame_entry.pose());
+          relative_pose_history.pushValue(frame_entry.utc_ts(), camera_from_field);
+        }
+      }
     }
     else
     {
