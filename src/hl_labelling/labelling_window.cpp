@@ -22,6 +22,7 @@ namespace hl_labelling
 LabellingWindow::LabellingWindow(std::unique_ptr<hl_monitoring::ReplayImageProvider> provider_,
                                  const std::string& window_name, bool moving_frames_only_)
   : ReplayViewer(std::move(provider_), window_name, false)
+  , labelling_manager(field.ball_radius)
   , view_mode(MODE_ALL)
   , tag_mode(MODE_FIELD)
   , object_id(0)
@@ -62,7 +63,7 @@ void LabellingWindow::paintImg()
   int frame_index = provider->getIndex(now);
   uint64_t frame_ts = provider->getTimeStamp(frame_index);
   CameraMetaInformation information = calibrated_img.getCameraInformation();
-  setProtobufFromAffine(labelling_manager.getCorrectedCameraPose(frame_ts), information.mutable_pose());
+  setProtobufFromAffine(labelling_manager.getCameraPose(getSourceId(), frame_ts), information.mutable_pose());
   if (view_mode == MODE_ALL || view_mode == MODE_FIELD)
   {
     field.tagLines(information, &display_img, cv::Scalar(0, 0, 0), 1, 10);
@@ -78,6 +79,20 @@ void LabellingWindow::paintImg()
       {
         cv::circle(display_img, ball_in_img, 3, cv::Scalar(0, 0, 255), CV_FILLED, cv::LINE_AA);
       }
+      // TODO: add text
+    }
+  }
+  if (view_mode == MODE_ALL || view_mode == MODE_ROBOT)
+  {
+    for (const auto& entry : labelling_manager.getRobots(frame_ts))
+    {
+      const Eigen::Vector3d& robot_in_field = entry.second;
+      cv::Point2f robot_in_img;
+      if (fieldToImg(eigen2CV(robot_in_field), information, &robot_in_img))
+      {
+        cv::circle(display_img, robot_in_img, 3, cv::Scalar(255, 0, 255), CV_FILLED, cv::LINE_AA);
+      }
+      // TODO: add text
     }
   }
 }
@@ -100,8 +115,8 @@ void LabellingWindow::startPoseCalibration()
     {
       label.add_field_matches()->CopyFrom(match);
     }
-    labelling_manager.pushMsg(label, field.ball_radius);
-    labelling_manager.pushManualPose(frame_index, camera_from_world);
+    labelling_manager.push(getSourceId(), label);
+    labelling_manager.pushManualPose(getSourceId(), frame_index, camera_from_world);
   }
 }
 
@@ -117,7 +132,7 @@ void LabellingWindow::treatMouseEvent(int event, int x, int y, int flags)
     ball->mutable_center()->set_x(x);
     ball->mutable_center()->set_y(y);
     ball->set_ball_id(object_id);
-    labelling_manager.pushMsg(label, field.ball_radius);
+    labelling_manager.push(getSourceId(), label);
   }
 }
 

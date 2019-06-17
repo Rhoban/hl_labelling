@@ -1,5 +1,5 @@
 #pragma once
-#include <hl_labelling/video_labelling_manager.h>
+#include <hl_labelling/labelling_manager.h>
 #include <hl_monitoring/replay_viewer.h>
 
 namespace hl_labelling
@@ -13,7 +13,7 @@ public:
   void paintImg() override;
   void startPoseCalibration();
 
-  VideoLabellingManager labelling_manager;
+  LabellingManager labelling_manager;
 
 protected:
   void updateTime() override;

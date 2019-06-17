@@ -6,9 +6,8 @@
 namespace hl_labelling
 {
 /**
- * Manages all the labels of a single video, can include relative pose information regarding the camera
- *
- * TODO: find another solution for ball_radius
+ * Manages all the labels of a single video, can include relative pose
+ * information regarding the camera
  */
 class VideoLabellingManager
 {
@@ -22,25 +21,25 @@ public:
    */
   void importMetaData(const hl_communication::VideoMetaInformation& meta_information);
 
-  /**
-   * ball_radius: [m]
-   */
-  void pushMsg(const hl_communication::LabelMsg& msg, double ball_radius);
+  void pushMsg(const hl_communication::LabelMsg& msg);
   void pushManualPose(int frame_index, const Eigen::Affine3d& camera_from_field);
-  void pushBall(uint64_t utc_ts, const hl_communication::BallMsg& ball, double ball_radius);
 
   /**
    * Remove all ball labels from the current labelCollection
    */
   void clearBalls();
 
-  void importLabels(const hl_communication::MovieLabelCollection& movie, double ball_radius);
+  void importLabels(const hl_communication::MovieLabelCollection& movie);
   void exportLabels(hl_communication::MovieLabelCollection* movie);
+  /**
+   * Export video meta information after pose correction based on labels
+   */
+  void exportCorrectedCamera(hl_communication::VideoMetaInformation* dst);
 
   /**
-   * Get the position of the balls in the field
+   * Extract the ball labels from the current labels ordered by frame_index
    */
-  std::map<int, Eigen::Vector3d> getBalls(uint64_t timestamp);
+  std::map<int, std::vector<hl_communication::BallMsg>> getBallLabels() const;
 
   /**
    * Return the pose of the camera in field referential based on two elements:
@@ -48,6 +47,13 @@ public:
    * - Camera relative poses (estimated by robot,imu,etc..)
    */
   Eigen::Affine3d getCorrectedCameraPose(uint64_t timestamp);
+
+  const hl_communication::VideoMetaInformation& getMetaInformation() const;
+
+  /**
+   * Synchronize the poses of the camera with the field_matches
+   */
+  void syncPoses();
 
 private:
   /**
@@ -73,12 +79,6 @@ private:
    * The existing labels ordered first by camera_source and then by frame_index
    */
   std::map<int, hl_communication::LabelMsg> labels;
-
-  /**
-   * Position of the labelled balls in field referential
-   * TODO: a bool history could be added to say if ball is present or not
-   */
-  std::map<int, std::unique_ptr<rhoban_utils::HistoryVector3d>> balls;
 
   /**
    * Poses obtained through manual estimation

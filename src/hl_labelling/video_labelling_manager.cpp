@@ -3,7 +3,6 @@
 #include <hl_communication/utils.h>
 #include <hl_monitoring/manual_pose_solver.h>
 #include <hl_labelling/utils.h>
-#include <robot_model/camera_model.h>
 
 #include <google/protobuf/util/json_util.h>
 #include <google/protobuf/util/message_differencer.h>
@@ -47,6 +46,10 @@ int VideoLabellingManager::getNextPoseIdx(uint64_t timestamp)
 
 Eigen::Affine3d VideoLabellingManager::getCorrectedCameraPose(uint64_t timestamp)
 {
+  if (manual_poses.size() == 0)
+  {
+    return relative_pose_history.interpolate(timestamp);
+  }
   int prev_idx = getPreviousPoseIdx(timestamp);
   int next_idx = getNextPoseIdx(timestamp);
   if (prev_idx < 0 && next_idx < 0)
@@ -82,6 +85,16 @@ Eigen::Affine3d VideoLabellingManager::getCorrectedCameraPose(uint64_t timestamp
   return rhoban_utils::averageFrames(pred_from_prev, pred_from_next, w_next);
 }
 
+const hl_communication::VideoMetaInformation& VideoLabellingManager::getMetaInformation() const
+{
+  return meta_information;
+}
+
+void VideoLabellingManager::syncPoses()
+{
+  // TODO: currently done automatically
+}
+
 void VideoLabellingManager::importMetaData(const hl_communication::VideoMetaInformation& new_meta_information)
 {
   if (!new_meta_information.has_source_id())
@@ -97,22 +110,16 @@ void VideoLabellingManager::importMetaData(const hl_communication::VideoMetaInfo
   }
 }
 
-void VideoLabellingManager::pushMsg(const LabelMsg& msg, double ball_radius)
+void VideoLabellingManager::pushMsg(const LabelMsg& msg)
 {
   if (!msg.has_frame_index())
     throw std::logic_error(HL_DEBUG + "message has no frame index");
   uint32_t frame_index = msg.frame_index();
-  uint64_t utc_ts = getTimeStamp(meta_information, frame_index, true);
   exportLabel(msg, &(labels[frame_index]));
-  for (const BallMsg& ball : msg.balls())
-  {
-    pushBall(utc_ts, ball, ball_radius);
-  }
 }
 
 void VideoLabellingManager::clearBalls()
 {
-  balls.clear();
   for (auto& entry : labels)
   {
     entry.second.clear_balls();
@@ -124,44 +131,30 @@ void VideoLabellingManager::pushManualPose(int frame_index, const Eigen::Affine3
   manual_poses[frame_index] = camera_from_field;
 }
 
-void VideoLabellingManager::pushBall(uint64_t utc_ts, const BallMsg& ball, double ball_radius)
+void VideoLabellingManager::importLabels(const MovieLabelCollection& movie)
 {
-  if (!ball.has_ball_id())
-    throw std::logic_error(HL_DEBUG + "cannot use a ball without ball_id");
-  Eigen::Affine3d camera_from_field = getCorrectedCameraPose(utc_ts);
-  rhoban::CameraModel camera_model = intrinsicParametersToCameraModel(meta_information.camera_parameters());
-  // Height of the ball is determined according to the ball radius
-  rhoban_geometry::Plane ball_plane_in_field(Eigen::Vector3d::UnitZ(), ball_radius);
-  cv::Point2f img_pos(ball.center().x(), ball.center().y());
-  Eigen::Vector3d ball_in_field;
-  bool success =
-      camera_model.getPosFromPixelAndPlane(img_pos, ball_plane_in_field, &ball_in_field, camera_from_field.inverse());
-  if (success)
-  {
-    int ball_id = ball.ball_id();
-    if (balls.count(ball_id) == 0)
-    {
-      balls[ball_id] = std::unique_ptr<rhoban_utils::HistoryVector3d>(new rhoban_utils::HistoryVector3d(-1));
-    }
-    balls[ball_id]->pushValue(utc_ts, ball_in_field);
-  }
-  else
-  {
-    std::cerr << "Failed to get position of ball at " << img_pos << std::endl;
-  }
-}
-
-void VideoLabellingManager::importLabels(const MovieLabelCollection& movie, double ball_radius)
-{
+  // TODO: the 'video_meta_information' from MovieLabelCollection should be used, but how?
   if (movie.label_collections_size() > 1)
   {
-    throw std::logic_error(HL_DEBUG + " muliple labelers detected, not supported now");
+    throw std::logic_error(HL_DEBUG + " multiple labelers detected, not supported now");
   }
   if (!movie.has_source_id())
   {
     throw std::logic_error(HL_DEBUG + " 'movie' has no source id");
   }
-  if (!MessageDifferencer::Equals(movie.source_id(), meta_information.source_id()))
+  if (!meta_information.has_source_id())
+  {
+    // If no meta_information was provided, use info from label collection
+    if (movie.has_video_meta_information())
+    {
+      meta_information.CopyFrom(movie.video_meta_information());
+    }
+    else
+    {
+      meta_information.mutable_source_id()->CopyFrom(movie.source_id());
+    }
+  }
+  else if (!MessageDifferencer::Equals(movie.source_id(), meta_information.source_id()))
   {
     std::string movie_json, meta_json;
     google::protobuf::util::MessageToJsonString(movie.source_id(), &movie_json);
@@ -199,20 +192,12 @@ void VideoLabellingManager::importLabels(const MovieLabelCollection& movie, doub
       }
     }
   }
-  // Finally update balls in field
-  for (const auto& entry : labels)
-  {
-    uint64_t utc_ts = meta_information.frames(entry.first).utc_ts();
-    for (const BallMsg& ball : entry.second.balls())
-    {
-      pushBall(utc_ts, ball, ball_radius);
-    }
-  }
 }
 
 void VideoLabellingManager::exportLabels(MovieLabelCollection* movie)
 {
   movie->mutable_source_id()->CopyFrom(meta_information.source_id());
+  exportCorrectedCamera(movie->mutable_video_meta_information());
   LabelCollection* label_collection = movie->add_label_collections();
   label_collection->mutable_labeler_identity()->set_nick_name("unknown");
   for (const auto& frame_entry : labels)
@@ -221,12 +206,28 @@ void VideoLabellingManager::exportLabels(MovieLabelCollection* movie)
   }
 }
 
-std::map<int, Eigen::Vector3d> VideoLabellingManager::getBalls(uint64_t timestamp)
+void VideoLabellingManager::exportCorrectedCamera(VideoMetaInformation* dst)
 {
-  std::map<int, Eigen::Vector3d> result;
-  for (const auto& entry : balls)
+  dst->CopyFrom(meta_information);
+  for (int idx = 0; idx < dst->frames_size(); idx++)
   {
-    result[entry.first] = entry.second->interpolate(timestamp);
+    FrameEntry* frame = dst->mutable_frames(idx);
+    setProtobufFromAffine(getCorrectedCameraPose(frame->utc_ts()), frame->mutable_pose());
+  }
+}
+
+/**
+ * Extract the ball labels from the current labels
+ */
+std::map<int, std::vector<hl_communication::BallMsg>> VideoLabellingManager::getBallLabels() const
+{
+  std::map<int, std::vector<hl_communication::BallMsg>> result;
+  for (const auto& entry : labels)
+  {
+    for (const BallMsg& ball : entry.second.balls())
+    {
+      result[entry.first].push_back(ball);
+    }
   }
   return result;
 }
