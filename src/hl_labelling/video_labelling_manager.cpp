@@ -241,4 +241,9 @@ std::map<int, std::vector<hl_communication::BallMsg>> VideoLabellingManager::get
   return result;
 }
 
+void VideoLabellingManager::summarize(std::ostream* out) const
+{
+  *out << "metainfo: " << meta_information.frames_size() << " frames" << std::endl;
+}
+
 }  // namespace hl_labelling

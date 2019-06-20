@@ -55,6 +55,11 @@ public:
    */
   void syncPoses();
 
+  /**
+   * Writes a few properties on the output stream properties
+   */
+  void summarize(std::ostream* out) const;
+
 private:
   /**
    * Returns index of the previous pose, return -1 if there is no previous pose

@@ -52,6 +52,14 @@ void LabellingManager::importLabels(const MovieLabelCollection& movie)
   managers[movie.source_id()].importLabels(movie);
 }
 
+void LabellingManager::importLabels(const GameLabelCollection& game_labels)
+{
+  for (const auto& movie : game_labels.movies())
+  {
+    importLabels(movie);
+  }
+}
+
 void LabellingManager::exportLabels(const hl_communication::VideoSourceID& source_id, MovieLabelCollection* movie)
 {
   managers.at(source_id).exportLabels(movie);
@@ -192,7 +200,7 @@ void LabellingManager::summarize(std::ostream* out) const
   for (const auto& entry : managers)
   {
     (*out) << "#" << entry.first << std::endl;
-    // entry.second.summarize();
+    entry.second.summarize(out);
   }
 }
 

@@ -39,6 +39,7 @@ public:
                       const Eigen::Affine3d& camera_from_world);
 
   void importLabels(const hl_communication::MovieLabelCollection& movie);
+  void importLabels(const hl_communication::GameLabelCollection& movie);
   void exportLabels(const hl_communication::VideoSourceID& source_id, hl_communication::MovieLabelCollection* movie);
   void exportLabels(hl_communication::GameLabelCollection* game_labels);
 

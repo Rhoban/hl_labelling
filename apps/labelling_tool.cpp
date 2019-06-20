@@ -20,6 +20,7 @@ int main(int argc, char** argv)
   TCLAP::SwitchArg moving_only_arg("", "moving-only", "Keep only frames with status 'moving'", cmd);
   TCLAP::SwitchArg merge_arg("", "merge", "Place all labels in output file, not only the one from current video", cmd);
   TCLAP::SwitchArg verbose_arg("", "verbose", "Use log output", cmd);
+  TCLAP::SwitchArg game_input_arg("", "game-input", "Input labels are 'merged labels'", cmd);
   cmd.parse(argc, argv);
 
   std::unique_ptr<ReplayImageProvider> image_provider(
@@ -28,9 +29,18 @@ int main(int argc, char** argv)
   LabellingWindow window(std::move(image_provider), "calibration_tool", moving_only_arg.getValue());
   for (const std::string& label_path : input_arg.getValue())
   {
-    hl_communication::MovieLabelCollection labels;
-    hl_communication::readFromFile(label_path, &labels);
-    window.labelling_manager.importLabels(labels);
+    if (game_input_arg.getValue())
+    {
+      hl_communication::GameLabelCollection labels;
+      hl_communication::readFromFile(label_path, &labels);
+      window.labelling_manager.importLabels(labels);
+    }
+    else
+    {
+      hl_communication::MovieLabelCollection labels;
+      hl_communication::readFromFile(label_path, &labels);
+      window.labelling_manager.importLabels(labels);
+    }
   }
   window.labelling_manager.sync();
   // if (clear_balls_arg.getValue())
