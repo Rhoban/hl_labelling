@@ -57,6 +57,14 @@ void LabellingManager::exportLabels(const hl_communication::VideoSourceID& sourc
   managers.at(source_id).exportLabels(movie);
 }
 
+void LabellingManager::exportLabels(GameLabelCollection* game_labels)
+{
+  for (const auto& entry : managers)
+  {
+    exportLabels(entry.first, game_labels->add_movies());
+  }
+}
+
 void LabellingManager::importMetaData(const hl_communication::VideoMetaInformation& meta_information)
 {
   managers[meta_information.source_id()].importMetaData(meta_information);
@@ -174,6 +182,17 @@ void LabellingManager::syncRobots()
       }
       robots_in_field[robot_id]->pushValue(utc_ts, camera_in_field);
     }
+  }
+}
+
+void LabellingManager::summarize(std::ostream* out) const
+{
+  (*out) << "LABELLING MANAGER CONTENT" << std::endl;
+  (*out) << "-------------------------" << std::endl;
+  for (const auto& entry : managers)
+  {
+    (*out) << "#" << entry.first << std::endl;
+    // entry.second.summarize();
   }
 }
 

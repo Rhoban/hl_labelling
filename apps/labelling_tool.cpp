@@ -18,6 +18,8 @@ int main(int argc, char** argv)
                                             "metadata", cmd);
   TCLAP::SwitchArg clear_balls_arg("", "clear-balls", "Clear all balls from the input", cmd);
   TCLAP::SwitchArg moving_only_arg("", "moving-only", "Keep only frames with status 'moving'", cmd);
+  TCLAP::SwitchArg merge_arg("", "merge", "Place all labels in output file, not only the one from current video", cmd);
+  TCLAP::SwitchArg verbose_arg("", "verbose", "Use log output", cmd);
   cmd.parse(argc, argv);
 
   std::unique_ptr<ReplayImageProvider> image_provider(
@@ -35,8 +37,21 @@ int main(int argc, char** argv)
   //{
   //  window.labelling_manager.clearBalls();
   //}
+  if (verbose_arg.getValue())
+  {
+    window.labelling_manager.summarize(&std::cout);
+  }
   window.run();
-  hl_communication::MovieLabelCollection labels;
-  window.labelling_manager.exportLabels(source_id, &labels);
-  hl_communication::writeToFile(output_arg.getValue(), labels);
+  if (merge_arg.getValue())
+  {
+    hl_communication::GameLabelCollection game_labels;
+    window.labelling_manager.exportLabels(&game_labels);
+    hl_communication::writeToFile(output_arg.getValue(), game_labels);
+  }
+  else
+  {
+    hl_communication::MovieLabelCollection video_labels;
+    window.labelling_manager.exportLabels(source_id, &video_labels);
+    hl_communication::writeToFile(output_arg.getValue(), video_labels);
+  }
 }

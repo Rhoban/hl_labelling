@@ -40,6 +40,7 @@ public:
 
   void importLabels(const hl_communication::MovieLabelCollection& movie);
   void exportLabels(const hl_communication::VideoSourceID& source_id, hl_communication::MovieLabelCollection* movie);
+  void exportLabels(hl_communication::GameLabelCollection* game_labels);
 
   /**
    * Imports the metadata of a video in order to provide relative history to its source.
@@ -62,6 +63,11 @@ public:
    * Synchronize all histories from the current labels
    */
   void sync();
+
+  /**
+   * Print a few stats in output stream
+   */
+  void summarize(std::ostream* out) const;
 
 private:
   /**
