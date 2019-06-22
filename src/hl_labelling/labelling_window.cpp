@@ -72,14 +72,16 @@ void LabellingWindow::paintImg()
   {
     for (const auto& entry : labelling_manager.getBalls(frame_ts))
     {
+      cv::Scalar ball_color = cv::Scalar(0, 0, 255);
       int ball_id = entry.first;
       const Eigen::Vector3d& ball_in_field = entry.second;
       cv::Point2f ball_in_img;
       if (fieldToImg(eigen2CV(ball_in_field), information, &ball_in_img))
       {
-        cv::circle(display_img, ball_in_img, 3, cv::Scalar(0, 0, 255), CV_FILLED, cv::LINE_AA);
+        cv::circle(display_img, ball_in_img, 2, ball_color, CV_FILLED, cv::LINE_AA);
       }
-      // TODO: add text
+      cv::putText(display_img, std::to_string(ball_id), ball_in_img, cv::FONT_HERSHEY_PLAIN, 1.0, ball_color, 1,
+                  cv::LINE_AA);
     }
   }
   if (view_mode == MODE_ALL || view_mode == MODE_ROBOT)
@@ -88,11 +90,13 @@ void LabellingWindow::paintImg()
     {
       const Eigen::Vector3d& robot_in_field = entry.second;
       cv::Point2f robot_in_img;
+      cv::Scalar robot_color(255, 0, 255);
       if (fieldToImg(eigen2CV(robot_in_field), information, &robot_in_img))
       {
-        cv::circle(display_img, robot_in_img, 3, cv::Scalar(255, 0, 255), CV_FILLED, cv::LINE_AA);
+        cv::circle(display_img, robot_in_img, 3, robot_color, CV_FILLED, cv::LINE_AA);
       }
-      // TODO: add text
+      std::string text = std::to_string(entry.first.team_id()) + "," + std::to_string(entry.first.robot_id());
+      cv::putText(display_img, text, robot_in_img, cv::FONT_HERSHEY_PLAIN, 1.0, robot_color, 1, cv::LINE_AA);
     }
   }
 }
