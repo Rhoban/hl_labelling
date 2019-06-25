@@ -17,27 +17,28 @@ int main(int argc, char** argv)
   TCLAP::ValueArg<std::string> metadata_arg("m", "metadata", "Metadata of the video to be labelled", true, "metadata",
                                             "metadata", cmd);
   TCLAP::SwitchArg clear_balls_arg("", "clear-balls", "Clear all balls from the input", cmd);
-  TCLAP::SwitchArg moving_only_arg("", "moving-only", "Keep only frames with status 'moving'", cmd);
-  TCLAP::SwitchArg merge_arg("", "merge", "Place all labels in output file, not only the one from current video", cmd);
+  TCLAP::SwitchArg all_frames_arg("", "all-frames", "Keep all frames, not only the 'moving' ones", cmd);
   TCLAP::SwitchArg verbose_arg("", "verbose", "Use log output", cmd);
-  TCLAP::SwitchArg game_input_arg("", "game-input", "Input labels are 'merged labels'", cmd);
+  TCLAP::SwitchArg video_output_arg("", "video_output",
+                                    "Place all labels in output file, not only the one from current video", cmd);
+  TCLAP::SwitchArg video_input_arg("", "video-input", "Input labels are 'merged labels'", cmd);
   cmd.parse(argc, argv);
 
   std::unique_ptr<ReplayImageProvider> image_provider(
       new ReplayImageProvider(video_arg.getValue(), metadata_arg.getValue()));
   hl_communication::VideoSourceID source_id = image_provider->getMetaInformation().source_id();
-  LabellingWindow window(std::move(image_provider), "calibration_tool", moving_only_arg.getValue());
+  LabellingWindow window(std::move(image_provider), "calibration_tool", !all_frames_arg.getValue());
   for (const std::string& label_path : input_arg.getValue())
   {
-    if (game_input_arg.getValue())
+    if (video_input_arg.getValue())
     {
-      hl_communication::GameLabelCollection labels;
+      hl_communication::MovieLabelCollection labels;
       hl_communication::readFromFile(label_path, &labels);
       window.labelling_manager.importLabels(labels);
     }
     else
     {
-      hl_communication::MovieLabelCollection labels;
+      hl_communication::GameLabelCollection labels;
       hl_communication::readFromFile(label_path, &labels);
       window.labelling_manager.importLabels(labels);
     }
@@ -52,16 +53,16 @@ int main(int argc, char** argv)
     window.labelling_manager.summarize(&std::cout);
   }
   window.run();
-  if (merge_arg.getValue())
-  {
-    hl_communication::GameLabelCollection game_labels;
-    window.labelling_manager.exportLabels(&game_labels);
-    hl_communication::writeToFile(output_arg.getValue(), game_labels);
-  }
-  else
+  if (video_output_arg.getValue())
   {
     hl_communication::MovieLabelCollection video_labels;
     window.labelling_manager.exportLabels(source_id, &video_labels);
     hl_communication::writeToFile(output_arg.getValue(), video_labels);
+  }
+  else
+  {
+    hl_communication::GameLabelCollection game_labels;
+    window.labelling_manager.exportLabels(&game_labels);
+    hl_communication::writeToFile(output_arg.getValue(), game_labels);
   }
 }

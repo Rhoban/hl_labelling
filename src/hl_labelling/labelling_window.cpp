@@ -108,7 +108,9 @@ void LabellingWindow::startPoseCalibration()
   CalibratedImage calib_img = provider->getCalibratedImage(frame_ts);
 
   ManualPoseSolver solver(calib_img.getImg(), calib_img.getCameraInformation().camera_parameters(), field);
+  Eigen::Affine3d initial_guess = labelling_manager.getCameraPose(getSourceId(), frame_ts);
   Pose3D pose;
+  setProtobufFromAffine(initial_guess, &pose);
   std::vector<Match2D3DMsg> matches;
   if (solver.solve(&pose, &matches))
   {
