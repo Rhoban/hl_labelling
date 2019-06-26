@@ -140,6 +140,18 @@ void LabellingWindow::treatMouseEvent(int event, int x, int y, int flags)
     ball->set_ball_id(object_id);
     labelling_manager.push(getSourceId(), label);
   }
+  if (tag_mode == MODE_ROBOT && event == cv::EVENT_LBUTTONDOWN)
+  {
+    hl_communication::LabelMsg label;
+    int frame_index = provider->getIndex(now);
+    label.set_frame_index(frame_index);
+    RobotMessage* robot = label.add_robots();
+    robot->mutable_ground_position()->set_x(x);
+    robot->mutable_ground_position()->set_y(y);
+    robot->mutable_robot_id()->set_team_id(team_id);
+    robot->mutable_robot_id()->set_robot_id(object_id);
+    labelling_manager.push(getSourceId(), label);
+  }
 }
 
 void LabellingWindow::updateTagMode(int new_mode)
@@ -159,7 +171,7 @@ void LabellingWindow::updateObjectID(int new_id)
 
 void LabellingWindow::updateTeamID(int new_id)
 {
-  object_id = new_id;
+  team_id = new_id;
 }
 
 }  // namespace hl_labelling

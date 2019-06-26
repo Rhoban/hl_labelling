@@ -153,7 +153,7 @@ void LabellingManager::syncBalls()
             balls_in_field[ball_id] =
                 std::unique_ptr<rhoban_utils::HistoryVector3d>(new rhoban_utils::HistoryVector3d(-1));
           }
-          balls_in_field[ball_id]->pushValue(utc_ts, ball_in_field);
+          balls_in_field[ball_id]->pushValue(utc_ts, ball_in_field, false);
         }
         else
         {
@@ -167,6 +167,8 @@ void LabellingManager::syncBalls()
 void LabellingManager::syncRobots()
 {
   robots_in_field.clear();
+  rhoban_geometry::Plane ground_plane_in_field(Eigen::Vector3d::UnitZ(), 0.0);
+
   for (const auto& entry : managers)
   {
     const VideoSourceID source_id = entry.first;
@@ -176,6 +178,7 @@ void LabellingManager::syncRobots()
     }
     const RobotIdentifier& robot_id = source_id.robot_source().robot_id();
     const hl_communication::VideoMetaInformation& meta_information = entry.second.getMetaInformation();
+    // Get robots based on projection of their camera on the ground
     for (int frame_idx = 0; frame_idx < meta_information.frames_size(); frame_idx++)
     {
       uint64_t utc_ts = getTimeStamp(meta_information, frame_idx);
@@ -188,7 +191,39 @@ void LabellingManager::syncRobots()
         robots_in_field[robot_id] =
             std::unique_ptr<rhoban_utils::HistoryVector3d>(new rhoban_utils::HistoryVector3d(-1));
       }
-      robots_in_field[robot_id]->pushValue(utc_ts, camera_in_field);
+      robots_in_field[robot_id]->pushValue(utc_ts, camera_in_field, false);
+    }
+    // Get robots based on explicit human tags
+    for (const auto& robot_entry : entry.second.getRobotLabels())
+    {
+      int frame_index = robot_entry.first;
+      const hl_communication::VideoMetaInformation& meta_information = entry.second.getMetaInformation();
+      rhoban::CameraModel camera_model = intrinsicParametersToCameraModel(meta_information.camera_parameters());
+      uint64_t utc_ts = getTimeStamp(meta_information, frame_index);
+      Eigen::Affine3d camera_from_field = getCameraPose(source_id, utc_ts);
+      for (const RobotMessage& robot : robot_entry.second)
+      {
+        if (!robot.has_robot_id())
+          throw std::logic_error(HL_DEBUG + "cannot use a robot without robot_id");
+        const RobotIdentifier& robot_id = robot.robot_id();
+        cv::Point2f img_pos(robot.ground_position().x(), robot.ground_position().y());
+        Eigen::Vector3d robot_in_field;
+        bool success = camera_model.getPosFromPixelAndPlane(img_pos, ground_plane_in_field, &robot_in_field,
+                                                            camera_from_field.inverse());
+        if (success)
+        {
+          if (robots_in_field.count(robot_id) == 0)
+          {
+            robots_in_field[robot_id] =
+                std::unique_ptr<rhoban_utils::HistoryVector3d>(new rhoban_utils::HistoryVector3d(-1));
+          }
+          robots_in_field[robot_id]->pushValue(utc_ts, robot_in_field, false);
+        }
+        else
+        {
+          std::cerr << "Failed to get position of robot at " << img_pos << std::endl;
+        }
+      }
     }
   }
 }

@@ -233,9 +233,6 @@ void VideoLabellingManager::exportCorrectedCamera(VideoMetaInformation* dst)
   }
 }
 
-/**
- * Extract the ball labels from the current labels
- */
 std::map<int, std::vector<hl_communication::BallMsg>> VideoLabellingManager::getBallLabels() const
 {
   std::map<int, std::vector<hl_communication::BallMsg>> result;
@@ -244,6 +241,18 @@ std::map<int, std::vector<hl_communication::BallMsg>> VideoLabellingManager::get
     for (const BallMsg& ball : entry.second.balls())
     {
       result[entry.first].push_back(ball);
+    }
+  }
+  return result;
+}
+std::map<int, std::vector<hl_communication::RobotMessage>> VideoLabellingManager::getRobotLabels() const
+{
+  std::map<int, std::vector<hl_communication::RobotMessage>> result;
+  for (const auto& entry : labels)
+  {
+    for (const RobotMessage& robot : entry.second.robots())
+    {
+      result[entry.first].push_back(robot);
     }
   }
   return result;

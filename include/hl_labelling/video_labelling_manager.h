@@ -42,6 +42,11 @@ public:
   std::map<int, std::vector<hl_communication::BallMsg>> getBallLabels() const;
 
   /**
+   * Extract the robot labels ordered by frame_index
+   */
+  std::map<int, std::vector<hl_communication::RobotMessage>> getRobotLabels() const;
+
+  /**
    * Return the pose of the camera in field referential based on two elements:
    * - Manual pose provided by tagging
    * - Camera relative poses (estimated by robot,imu,etc..)
