@@ -38,6 +38,11 @@ public:
   void pushManualPose(const hl_communication::VideoSourceID& source_id, int frame_index,
                       const Eigen::Affine3d& camera_from_world);
 
+  void clearBall(int id);
+  void clearAllBalls();
+  void clearRobot(hl_communication::RobotIdentifier robot_to_delete);
+  void clearAllRobots();
+
   void importLabels(const hl_communication::MovieLabelCollection& movie);
   void importLabels(const hl_communication::GameLabelCollection& movie);
   void exportLabels(const hl_communication::VideoSourceID& source_id, hl_communication::MovieLabelCollection* movie);

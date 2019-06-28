@@ -47,6 +47,38 @@ void LabellingManager::pushManualPose(const hl_communication::VideoSourceID& sou
   managers[source_id].pushManualPose(frame_index, camera_from_world);
 }
 
+void LabellingManager::clearBall(int id)
+{
+  for (auto& entry : managers)
+  {
+    entry.second.clearBall(id);
+  }
+}
+
+void LabellingManager::clearAllBalls()
+{
+  for (auto& entry : managers)
+  {
+    entry.second.clearAllBalls();
+  }
+}
+
+void LabellingManager::clearRobot(hl_communication::RobotIdentifier robot_to_delete)
+{
+  for (auto& entry : managers)
+  {
+    entry.second.clearRobot(robot_to_delete);
+  }
+}
+
+void LabellingManager::clearAllRobots()
+{
+  for (auto& entry : managers)
+  {
+    entry.second.clearAllRobots();
+  }
+}
+
 void LabellingManager::importLabels(const MovieLabelCollection& movie)
 {
   managers[movie.source_id()].importLabels(movie);

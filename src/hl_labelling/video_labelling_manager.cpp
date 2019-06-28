@@ -4,6 +4,8 @@
 #include <hl_monitoring/manual_pose_solver.h>
 #include <hl_labelling/utils.h>
 
+#include <iostream>
+
 #include <google/protobuf/util/json_util.h>
 #include <google/protobuf/util/message_differencer.h>
 
@@ -125,11 +127,61 @@ void VideoLabellingManager::pushMsg(const LabelMsg& msg)
   exportLabel(msg, &(labels[frame_index]));
 }
 
-void VideoLabellingManager::clearBalls()
+void VideoLabellingManager::clearBall(int id)
+{
+  for (auto& entry : labels)
+  {
+    google::protobuf::RepeatedPtrField<BallMsg>* repeatedField = entry.second.mutable_balls();
+
+    for (google::protobuf::RepeatedPtrField<BallMsg>::iterator it = repeatedField->begin(); it != repeatedField->end();
+         it++)
+    {
+      if (it->ball_id() == (signed)id)
+      {
+        repeatedField->erase(it);
+        break;
+      }
+    }
+  }
+}
+
+void VideoLabellingManager::clearAllBalls()
 {
   for (auto& entry : labels)
   {
     entry.second.clear_balls();
+  }
+}
+
+void VideoLabellingManager::clearRobot(hl_communication::RobotIdentifier robot_to_delete)
+{
+  for (auto& entry : labels)
+  {
+    // hl_communication::RobotMessage rb = copyFrom(entry.second.robots());
+    //    entry.second.clear_robots();
+    /*   for (auto& entry_robot : entry.second.robots())
+    {
+      if (entry_robot)
+      }*/
+    google::protobuf::RepeatedPtrField<RobotMessage>* repeatedField = entry.second.mutable_robots();
+
+    for (google::protobuf::RepeatedPtrField<RobotMessage>::iterator it = repeatedField->begin();
+         it != repeatedField->end(); it++)
+    {
+      if (it->robot_id() == robot_to_delete)
+      {
+        repeatedField->erase(it);
+        break;
+      }
+    }
+  }
+}
+
+void VideoLabellingManager::clearAllRobots()
+{
+  for (auto& entry : labels)
+  {
+    entry.second.clear_robots();
   }
 }
 

@@ -3,6 +3,8 @@
 #include <tclap/CmdLine.h>
 #include <locale>
 
+#include <iostream>
+
 using namespace hl_monitoring;
 using namespace hl_labelling;
 
@@ -16,7 +18,13 @@ int main(int argc, char** argv)
                                          cmd);
   TCLAP::ValueArg<std::string> metadata_arg("m", "metadata", "Metadata of the video to be labelled", true, "metadata",
                                             "metadata", cmd);
-  TCLAP::SwitchArg clear_balls_arg("", "clear-balls", "Clear all balls from the input", cmd);
+  TCLAP::SwitchArg clear_all_balls_arg("", "clear-all-balls", "Clear all balls from the input", cmd);
+  TCLAP::ValueArg<int> clear_ball_arg("", "clear-ball", "Clear a ball from the input, arg is the id", false, 0,
+                                      "clear_option", cmd);
+  TCLAP::SwitchArg clear_all_robots_arg("", "clear-all-robots", "Clear all robots from the input", cmd);
+  TCLAP::ValueArg<std::string> clear_robot_arg(
+      "", "clear-robot", "Clear a robot from the input, write : teamId:robotID", false, "0:0", "clear_option", cmd);
+
   TCLAP::SwitchArg all_frames_arg("", "all-frames", "Keep all frames, not only the 'moving' ones", cmd);
   TCLAP::SwitchArg verbose_arg("", "verbose", "Use log output", cmd);
   TCLAP::SwitchArg video_output_arg("", "video_output",
@@ -43,15 +51,44 @@ int main(int argc, char** argv)
       window.labelling_manager.importLabels(labels);
     }
   }
-  window.labelling_manager.sync();
-  // if (clear_balls_arg.getValue())
-  //{
-  //  window.labelling_manager.clearBalls();
-  //}
+
+  if (!clear_robot_arg.getValue().empty())
+  {
+    std::string s = clear_robot_arg.getValue();
+    std::string delimiter = ":";
+
+    if (s.find(delimiter) == std::string::npos)
+      throw std::logic_error(HL_DEBUG + "please write with the format : 'teamID:robotId'");
+
+    std::string token = s.substr(0, s.find(delimiter));
+    s.erase(0, s.find(delimiter) + delimiter.length());
+    std::cout << "clear robot id : " << s << " team : " << token << std::endl;
+    hl_communication::RobotIdentifier rb;
+    rb.set_team_id(stoi(token));
+    rb.set_robot_id(stoi(s));
+    window.labelling_manager.clearRobot(rb);
+  }
+  if (clear_all_robots_arg.getValue())
+  {
+    window.labelling_manager.clearAllRobots();
+  }
+  if (clear_ball_arg.getValue())
+  {
+    std::cout << "clear ball id : " << clear_ball_arg.getValue() << std::endl;
+    window.labelling_manager.clearBall(clear_ball_arg.getValue());
+  }
+
+  if (clear_all_balls_arg.getValue())
+  {
+    window.labelling_manager.clearAllBalls();
+  }
   if (verbose_arg.getValue())
   {
     window.labelling_manager.summarize(&std::cout);
   }
+
+  window.labelling_manager.sync();
+
   window.run();
   if (video_output_arg.getValue())
   {

@@ -27,7 +27,10 @@ public:
   /**
    * Remove all ball labels from the current labelCollection
    */
-  void clearBalls();
+  void clearBall(int id);
+  void clearAllBalls();
+  void clearRobot(hl_communication::RobotIdentifier robot_to_delete);
+  void clearAllRobots();
 
   void importLabels(const hl_communication::MovieLabelCollection& movie);
   void exportLabels(hl_communication::MovieLabelCollection* movie);
