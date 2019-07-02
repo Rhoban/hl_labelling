@@ -1,5 +1,6 @@
 #include <hl_communication/utils.h>
 #include <hl_labelling/labelling_window.h>
+#include <rhoban_utils/util.h>
 #include <tclap/CmdLine.h>
 #include <locale>
 
@@ -8,12 +9,30 @@
 using namespace hl_monitoring;
 using namespace hl_labelling;
 
+bool importLabels(const std::string& path, LabellingManager* label_manager, bool video_input)
+{
+  if (video_input)
+  {
+    hl_communication::MovieLabelCollection labels;
+    hl_communication::readFromFile(path, &labels);
+    label_manager->importLabels(labels);
+  }
+  else
+  {
+    hl_communication::GameLabelCollection labels;
+    hl_communication::readFromFile(path, &labels);
+    label_manager->importLabels(labels);
+  }
+}
+
 int main(int argc, char** argv)
 {
   TCLAP::CmdLine cmd("labelling_tool", ' ', "0.0");
   TCLAP::MultiArg<std::string> input_arg("i", "input", "Existing label files", false, "labelling.pb", cmd);
-  TCLAP::ValueArg<std::string> output_arg("o", "output", "Output file for labelling", true, "labelling.pb", "output",
+  TCLAP::ValueArg<std::string> output_arg("o", "output", "Output file for labelling", false, "labelling.pb", "output",
                                           cmd);
+  TCLAP::ValueArg<std::string> edit_arg("e", "edit", "Input/Output file for labelling", false, "labelling.pb", "output",
+                                        cmd);
   TCLAP::ValueArg<std::string> video_arg("v", "video", "Name of the video to be labelled", true, "camera", "camera",
                                          cmd);
   TCLAP::ValueArg<std::string> metadata_arg("m", "metadata", "Metadata of the video to be labelled", true, "metadata",
@@ -32,24 +51,26 @@ int main(int argc, char** argv)
   TCLAP::SwitchArg video_input_arg("", "video-input", "Input labels are 'merged labels'", cmd);
   cmd.parse(argc, argv);
 
+  // First of all, check if -o has a risk of overriding a file
+  if (output_arg.isSet() && rhoban_utils::file_exists(output_arg.getValue()))
+  {
+    std::cerr << "File '" << output_arg.getValue() << " already exists, use edit option" << std::endl;
+    exit(-1);
+  }
+
   std::unique_ptr<ReplayImageProvider> image_provider(
       new ReplayImageProvider(video_arg.getValue(), metadata_arg.getValue()));
   hl_communication::VideoSourceID source_id = image_provider->getMetaInformation().source_id();
   LabellingWindow window(std::move(image_provider), "calibration_tool", !all_frames_arg.getValue());
+
+  if (edit_arg.isSet())
+  {
+    importLabels(edit_arg.getValue(), &window.labelling_manager, video_input_arg.getValue());
+  }
+
   for (const std::string& label_path : input_arg.getValue())
   {
-    if (video_input_arg.getValue())
-    {
-      hl_communication::MovieLabelCollection labels;
-      hl_communication::readFromFile(label_path, &labels);
-      window.labelling_manager.importLabels(labels);
-    }
-    else
-    {
-      hl_communication::GameLabelCollection labels;
-      hl_communication::readFromFile(label_path, &labels);
-      window.labelling_manager.importLabels(labels);
-    }
+    importLabels(label_path, &window.labelling_manager, video_input_arg.getValue());
   }
 
   if (!clear_robot_arg.getValue().empty())
@@ -90,16 +111,27 @@ int main(int argc, char** argv)
   window.labelling_manager.sync();
 
   window.run();
+  bool write_data = false;
+  std::string output_path = "";
+  if (output_arg.isSet())
+  {
+    output_path = output_arg.getValue();
+  }
+  else if (edit_arg.isSet())
+  {
+    output_path = edit_arg.getValue();
+  }
+
   if (video_output_arg.getValue())
   {
     hl_communication::MovieLabelCollection video_labels;
     window.labelling_manager.exportLabels(source_id, &video_labels);
-    hl_communication::writeToFile(output_arg.getValue(), video_labels);
+    hl_communication::writeToFile(output_path, video_labels);
   }
   else
   {
     hl_communication::GameLabelCollection game_labels;
     window.labelling_manager.exportLabels(&game_labels);
-    hl_communication::writeToFile(output_arg.getValue(), game_labels);
+    hl_communication::writeToFile(output_path, game_labels);
   }
 }
