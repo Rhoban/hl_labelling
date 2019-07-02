@@ -9,7 +9,7 @@
 using namespace hl_monitoring;
 using namespace hl_labelling;
 
-bool importLabels(const std::string& path, LabellingManager* label_manager, bool video_input)
+void importLabels(const std::string& path, LabellingManager* label_manager, bool video_input)
 {
   if (video_input)
   {
@@ -33,10 +33,15 @@ int main(int argc, char** argv)
                                           cmd);
   TCLAP::ValueArg<std::string> edit_arg("e", "edit", "Input/Output file for labelling", false, "labelling.pb", "output",
                                         cmd);
-  TCLAP::ValueArg<std::string> video_arg("v", "video", "Name of the video to be labelled", true, "camera", "camera",
+  TCLAP::ValueArg<std::string> video_arg("v", "video", "Name of the video to be labelled", false, "camera", "camera",
                                          cmd);
-  TCLAP::ValueArg<std::string> metadata_arg("m", "metadata", "Metadata of the video to be labelled", true, "metadata",
+  TCLAP::ValueArg<std::string> metadata_arg("m", "metadata", "Metadata of the video to be labelled", false, "metadata",
                                             "metadata", cmd);
+  TCLAP::ValueArg<std::string> robot_prefix_arg("", "robot-prefix",
+                                                "Uses robot_prefix to find the appropriate files for metadata and "
+                                                "video",
+                                                false, "log_path", "log_path", cmd);
+
   TCLAP::SwitchArg clear_all_balls_arg("", "clear-all-balls", "Clear all balls from the input", cmd);
   TCLAP::ValueArg<int> clear_ball_arg("", "clear-ball", "Clear a ball from the input, arg is the id", false, 0,
                                       "clear_option", cmd);
@@ -58,8 +63,36 @@ int main(int argc, char** argv)
     exit(-1);
   }
 
-  std::unique_ptr<ReplayImageProvider> image_provider(
-      new ReplayImageProvider(video_arg.getValue(), metadata_arg.getValue()));
+  // Check that edit or output is specified (tagging makes little sense if no output is allowed)
+  // Could be done using xor arguments
+  if (!output_arg.isSet() && !edit_arg.isSet())
+  {
+    std::cerr << "Flags output or edit should be used" << std::endl;
+    exit(-1);
+  }
+
+  // Could be done using xor arguments
+  if (!(video_arg.isSet() && metadata_arg.isSet()) && !robot_prefix_arg.isSet())
+  {
+    std::cerr << "Either specify 'video & metadata' or 'robot_prefix'" << std::endl;
+    exit(-1);
+  }
+  std::string video_path, metadata_path;
+  if (robot_prefix_arg.isSet())
+  {
+    std::string robot_prefix = robot_prefix_arg.getValue();
+    if (robot_prefix[video_path.size() - 1] != '/')
+      robot_prefix += "/";
+    video_path = robot_prefix + "video.avi";
+    metadata_path = robot_prefix + "camera_from_world.pb";
+  }
+  else
+  {
+    video_path = video_arg.getValue();
+    metadata_path = metadata_arg.getValue();
+  }
+
+  std::unique_ptr<ReplayImageProvider> image_provider(new ReplayImageProvider(video_path, metadata_path));
   hl_communication::VideoSourceID source_id = image_provider->getMetaInformation().source_id();
   LabellingWindow window(std::move(image_provider), "calibration_tool", !all_frames_arg.getValue());
 
