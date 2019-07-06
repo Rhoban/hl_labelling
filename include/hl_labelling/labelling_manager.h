@@ -75,6 +75,11 @@ public:
    */
   void summarize(std::ostream* out) const;
 
+  /**
+   * Print detailed stats on output stream
+   */
+  void analyze(std::ostream* out) const;
+
 private:
   /**
    * Updates poses for all video labelling manager

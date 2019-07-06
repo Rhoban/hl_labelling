@@ -106,7 +106,7 @@ int main(int argc, char** argv)
     importLabels(label_path, &window.labelling_manager, video_input_arg.getValue());
   }
 
-  if (!clear_robot_arg.getValue().empty())
+  if (!clear_robot_arg.isSet())
   {
     std::string s = clear_robot_arg.getValue();
     std::string delimiter = ":";
@@ -126,7 +126,7 @@ int main(int argc, char** argv)
   {
     window.labelling_manager.clearAllRobots();
   }
-  if (clear_ball_arg.getValue())
+  if (clear_ball_arg.isSet())
   {
     std::cout << "clear ball id : " << clear_ball_arg.getValue() << std::endl;
     window.labelling_manager.clearBall(clear_ball_arg.getValue());
@@ -136,12 +136,14 @@ int main(int argc, char** argv)
   {
     window.labelling_manager.clearAllBalls();
   }
+
+  window.labelling_manager.sync();
+
   if (verbose_arg.getValue())
   {
     window.labelling_manager.summarize(&std::cout);
+    window.labelling_manager.analyze(&std::cout);
   }
-
-  window.labelling_manager.sync();
 
   window.run();
   bool write_data = false;

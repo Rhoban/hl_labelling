@@ -155,6 +155,7 @@ void LabellingManager::syncPoses()
 
 void LabellingManager::syncBalls()
 {
+  std::cout << "syncing balls" << std::endl;
   balls_in_field.clear();
   for (const auto& entry : managers)
   {
@@ -164,6 +165,7 @@ void LabellingManager::syncBalls()
     // Height of the ball is determined according to the ball radius
     rhoban_geometry::Plane ball_plane_in_field(Eigen::Vector3d::UnitZ(), ball_radius);
     // TODO: import balls + pose
+    std::cout << entry.first << " has " << entry.second.getBallLabels().size() << " nb balls" << std::endl;
     for (const auto& ball_entry : entry.second.getBallLabels())
     {
       int frame_index = ball_entry.first;
@@ -268,6 +270,20 @@ void LabellingManager::summarize(std::ostream* out) const
   {
     (*out) << "#" << entry.first << std::endl;
     entry.second.summarize(out);
+  }
+}
+
+void LabellingManager::analyze(std::ostream* out) const
+{
+  std::cout << "nb balls: " << balls_in_field.size() << std::endl;
+  for (const auto& entry : balls_in_field)
+  {
+    (*out) << "Ball : " << entry.first << std::endl;
+    for (const auto& ball : entry.second->getValues())
+    {
+      uint64_t ball_ts = ball.first / std::pow(10, 6);
+      std::cout << "\t" << ball_ts << " -> " << ball.second.transpose() << std::endl;
+    }
   }
 }
 
