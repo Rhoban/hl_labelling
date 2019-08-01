@@ -136,7 +136,7 @@ void VideoLabellingManager::clearBall(int id)
     for (google::protobuf::RepeatedPtrField<BallMsg>::iterator it = repeatedField->begin(); it != repeatedField->end();
          it++)
     {
-      if (it->ball_id() == (signed)id)
+      if (it->ball_id() == (size_t)id)
       {
         repeatedField->erase(it);
         break;
