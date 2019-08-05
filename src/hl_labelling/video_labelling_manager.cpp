@@ -91,6 +91,13 @@ Eigen::Affine3d VideoLabellingManager::getCorrectedCameraPose(uint64_t timestamp
   return rhoban_utils::averageFrames(pred_from_prev, pred_from_next, w_next);
 }
 
+void VideoLabellingManager::exportCorrectedFrame(uint64_t timestamp, hl_communication::CameraMetaInformation* dst)
+{
+  *(dst->mutable_camera_parameters()) = meta_information.camera_parameters();
+  Eigen::Affine3d camera_pose = getCorrectedCameraPose(timestamp);
+  setProtobufFromAffine(camera_pose, dst->mutable_pose());
+}
+
 const hl_communication::VideoMetaInformation& VideoLabellingManager::getMetaInformation() const
 {
   return meta_information;

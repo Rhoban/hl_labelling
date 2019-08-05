@@ -55,6 +55,10 @@ public:
    * - Camera relative poses (estimated by robot,imu,etc..)
    */
   Eigen::Affine3d getCorrectedCameraPose(uint64_t timestamp);
+  /**
+   * Export the frame properties after correction of the camera pose
+   */
+  void exportCorrectedFrame(uint64_t timestamp, hl_communication::CameraMetaInformation* dst);
 
   const hl_communication::VideoMetaInformation& getMetaInformation() const;
 

@@ -146,7 +146,6 @@ int main(int argc, char** argv)
   }
 
   window.run();
-  bool write_data = false;
   std::string output_path = "";
   if (output_arg.isSet())
   {

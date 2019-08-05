@@ -27,6 +27,11 @@ public:
   LabellingManager(double ball_radius);
 
   /**
+   * Check if a source id exists
+   */
+  bool hasSource(const hl_communication::VideoSourceID& source_id) const;
+
+  /**
    * Add a label to the collection and synchronize histories as required
    */
   void push(const hl_communication::VideoSourceID& source_id, const hl_communication::LabelMsg& label);
@@ -43,6 +48,10 @@ public:
   void clearRobot(hl_communication::RobotIdentifier robot_to_delete);
   void clearAllRobots();
 
+  /**
+   * Label_path should contain GameLabelCollection message
+   */
+  void importLabels(const std::string& label_path);
   void importLabels(const hl_communication::MovieLabelCollection& movie);
   void importLabels(const hl_communication::GameLabelCollection& movie);
   void exportLabels(const hl_communication::VideoSourceID& source_id, hl_communication::MovieLabelCollection* movie);
@@ -54,7 +63,8 @@ public:
   void importMetaData(const hl_communication::VideoMetaInformation& meta_information);
 
   Eigen::Affine3d getCameraPose(const hl_communication::VideoSourceID& source_id, uint64_t utc_ts);
-
+  void exportCorrectedFrame(const hl_communication::VideoSourceID& source_id, uint64_t utc_ts,
+                            hl_communication::CameraMetaInformation* dst);
   /**
    * Return the positions of all labelled balls in the field at given timestamp
    */

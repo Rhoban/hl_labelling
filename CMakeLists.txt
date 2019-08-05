@@ -21,6 +21,7 @@ include_directories(${catkin_INCLUDE_DIRS} include)
 
 set(SOURCES_DIRECTORIES
   src/hl_labelling
+  src/hl_labelling/gtkmm
   )
 
   #Include Sources sub sources
@@ -39,3 +40,5 @@ target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
 add_executable(labelling_tool apps/labelling_tool.cpp)
 target_link_libraries(labelling_tool ${catkin_LIBRARIES} ${PROJECT_NAME})
 
+add_executable(gtk_labelling_tool apps/gtk_labelling_tool.cpp)
+target_link_libraries(gtk_labelling_tool ${catkin_LIBRARIES} ${PROJECT_NAME})

@@ -12,6 +12,10 @@ LabellingManager::LabellingManager(double ball_radius_) : ball_radius(ball_radiu
 {
 }
 
+bool LabellingManager::hasSource(const hl_communication::VideoSourceID& source_id) const
+{
+  return managers.count(source_id) > 0;
+}
 void LabellingManager::push(const hl_communication::VideoSourceID& source_id, const hl_communication::LabelMsg& label)
 {
   push(source_id, label, true);
@@ -79,6 +83,13 @@ void LabellingManager::clearAllRobots()
   }
 }
 
+void LabellingManager::importLabels(const std::string& label_path)
+{
+  hl_communication::GameLabelCollection labels;
+  hl_communication::readFromFile(label_path, &labels);
+  importLabels(labels);
+}
+
 void LabellingManager::importLabels(const MovieLabelCollection& movie)
 {
   managers[movie.source_id()].importLabels(movie);
@@ -113,6 +124,12 @@ void LabellingManager::importMetaData(const hl_communication::VideoMetaInformati
 Eigen::Affine3d LabellingManager::getCameraPose(const hl_communication::VideoSourceID& source_id, uint64_t utc_ts)
 {
   return managers.at(source_id).getCorrectedCameraPose(utc_ts);
+}
+
+void LabellingManager::exportCorrectedFrame(const hl_communication::VideoSourceID& source_id, uint64_t utc_ts,
+                                            hl_communication::CameraMetaInformation* dst)
+{
+  managers.at(source_id).exportCorrectedFrame(utc_ts, dst);
 }
 
 std::map<int, Eigen::Vector3d> LabellingManager::getBalls(uint64_t timestamp) const
