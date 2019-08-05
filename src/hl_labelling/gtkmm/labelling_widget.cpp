@@ -9,8 +9,15 @@ LabellingWidget::LabellingWidget(const hl_monitoring::Field& field)
   labelling_bar.show();
   add(display_area);
   display_area.show();
+  display_area.registerClickHandler(
+      [this](const std::string& source_name, const cv::Point2f& img_pos) { this->mouseClick(source_name, img_pos); });
 }
 LabellingWidget::~LabellingWidget()
 {
+}
+
+void LabellingWidget::mouseClick(const std::string& source_name, const cv::Point2f& img_pos)
+{
+  std::cout << "Click on " << source_name << " at " << img_pos << std::endl;
 }
 }  // namespace hl_labelling

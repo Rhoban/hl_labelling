@@ -11,6 +11,8 @@ public:
   LabellingWidget(const hl_monitoring::Field& field);
   virtual ~LabellingWidget();
 
+  void mouseClick(const std::string& source_name, const cv::Point2f& img_pos);
+
 protected:
   LabellingManager manager;
   /**
