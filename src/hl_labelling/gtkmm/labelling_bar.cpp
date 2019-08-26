@@ -10,6 +10,8 @@ namespace hl_labelling
 LabellingBar::LabellingBar(LabellingManager* manager)
   : labelling_manager(manager), load_labels_button("Load labels"), save_labels_button("Save labels")
 {
+  add(labelling_chooser);
+  labelling_chooser.show();
   load_labels_button.signal_clicked().connect(sigc::mem_fun(*this, &LabellingBar::on_load_labels));
   add(load_labels_button);
   load_labels_button.show();
