@@ -9,15 +9,41 @@ LabellingWidget::LabellingWidget(const hl_monitoring::Field& field)
   labelling_bar.show();
   add(display_area);
   display_area.show();
-  display_area.registerClickHandler(
-      [this](const std::string& source_name, const cv::Point2f& img_pos) { this->mouseClick(source_name, img_pos); });
+  display_area.registerClickHandler([this](const hl_communication::VideoSourceID& source_id,
+                                           const cv::Point2f& img_pos) { this->mouseClick(source_id, img_pos); });
 }
 LabellingWidget::~LabellingWidget()
 {
 }
 
-void LabellingWidget::mouseClick(const std::string& source_name, const cv::Point2f& img_pos)
+void LabellingWidget::mouseClick(const hl_communication::VideoSourceID& source_id, const cv::Point2f& img_pos)
 {
+  hl_communication::LabelMsg label;
+  label.set_frame_index(display_area.getFrameIndex(source_id));
+  // int team_id = labelling_bar.getLabellingChooser().getTeamID();
+  int obj_id = labelling_bar.getLabellingChooser().getObjID();
+  switch (labelling_bar.getLabellingChooser().getObjectType())
+  {
+    case LabellingChooser::Ball:
+    {
+      hl_communication::BallMsg* ball = label.add_balls();
+      ball->set_ball_id(obj_id);
+      ball->mutable_center()->set_x(img_pos.x);
+      ball->mutable_center()->set_y(img_pos.y);
+      manager.push(source_id, label);
+      std::cout << "adding a ball" << std::endl;
+      break;
+    }
+    case LabellingChooser::Field:
+      std::cout << "adding a field tag" << std::endl;
+      break;
+    case LabellingChooser::Robot:
+      std::cout << "Robots are not supported now" << std::endl;
+      break;
+    default:
+      std::cout << "unkown object type" << std::endl;
+  }
+  std::string source_name = display_area.getName(source_id);
   std::cout << "Click on " << source_name << " at " << img_pos << std::endl;
 }
 }  // namespace hl_labelling

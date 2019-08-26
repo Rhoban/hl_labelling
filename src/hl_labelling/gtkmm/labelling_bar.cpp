@@ -23,6 +23,10 @@ LabellingBar::LabellingBar(LabellingManager* manager)
 LabellingBar::~LabellingBar()
 {
 }
+const LabellingChooser& LabellingBar::getLabellingChooser() const
+{
+  return labelling_chooser;
+}
 
 void LabellingBar::on_load_labels()
 {
@@ -32,7 +36,8 @@ void LabellingBar::on_load_labels()
   {
     labelling_manager->importLabels(label_file);
   }
-  labelling_manager->summarize(&std::cout);
+  labelling_manager->sync();
+  labelling_manager->analyze(&std::cout);
 }
 
 void LabellingBar::on_save_labels()

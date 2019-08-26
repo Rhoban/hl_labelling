@@ -11,7 +11,7 @@ LabellingChooser::LabellingChooser()
   int max_balls = 6;
   int max_robots = 6;
   for (int i = 0; i < max_balls; i++)
-    addRow(ObjectType::Ball, i);
+    addRow(ObjectType::Ball, -1, i);
   for (int team : { 0, 1 })
     for (int robot_id = 1; robot_id <= max_robots; robot_id++)
       addRow(ObjectType::Robot, team, robot_id);

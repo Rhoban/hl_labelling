@@ -13,6 +13,8 @@ public:
   LabellingBar(LabellingManager* manager);
   virtual ~LabellingBar();
 
+  const LabellingChooser& getLabellingChooser() const;
+
 protected:
   /**
    * Open a dialog box to choose an input label file
