@@ -11,7 +11,9 @@ LabellingWidget::LabellingWidget(const hl_monitoring::Field& field)
   display_area.show();
   display_area.registerClickHandler([this](const hl_communication::VideoSourceID& source_id,
                                            const cv::Point2f& img_pos) { this->mouseClick(source_id, img_pos); });
+  labelling_bar.signal_collection_changed().connect(sigc::mem_fun(this, &LabellingWidget::on_label_collection_update));
 }
+
 LabellingWidget::~LabellingWidget()
 {
 }
@@ -31,6 +33,7 @@ void LabellingWidget::mouseClick(const hl_communication::VideoSourceID& source_i
       ball->mutable_center()->set_x(img_pos.x);
       ball->mutable_center()->set_y(img_pos.y);
       manager.push(source_id, label);
+      display_area.step(false);
       std::cout << "adding a ball" << std::endl;
       break;
     }
@@ -45,5 +48,10 @@ void LabellingWidget::mouseClick(const hl_communication::VideoSourceID& source_i
   }
   std::string source_name = display_area.getName(source_id);
   std::cout << "Click on " << source_name << " at " << img_pos << std::endl;
+}
+
+void LabellingWidget::on_label_collection_update()
+{
+  display_area.step(false);
 }
 }  // namespace hl_labelling

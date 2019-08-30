@@ -15,6 +15,11 @@ public:
 
   const LabellingChooser& getLabellingChooser() const;
 
+  /**
+   * This signal is emitted every time the labelling_manager collection is changed by the labelling bar
+   */
+  sigc::signal<void> signal_collection_changed();
+
 protected:
   /**
    * Open a dialog box to choose an input label file
@@ -33,5 +38,7 @@ protected:
   LabellingChooser labelling_chooser;
   Gtk::Button load_labels_button;
   Gtk::Button save_labels_button;
+
+  sigc::signal<void> collection_change_signal;
 };
 }  // namespace hl_labelling

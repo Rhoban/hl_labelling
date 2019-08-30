@@ -13,6 +13,11 @@ public:
 
   void mouseClick(const hl_communication::VideoSourceID& source_name, const cv::Point2f& img_pos);
 
+  /**
+   * Updates the display everytime the label_collection changes
+   */
+  void on_label_collection_update();
+
 protected:
   LabellingManager manager;
   /**

@@ -23,9 +23,15 @@ LabellingBar::LabellingBar(LabellingManager* manager)
 LabellingBar::~LabellingBar()
 {
 }
+
 const LabellingChooser& LabellingBar::getLabellingChooser() const
 {
   return labelling_chooser;
+}
+
+sigc::signal<void> LabellingBar::signal_collection_changed()
+{
+  return collection_change_signal;
 }
 
 void LabellingBar::on_load_labels()
@@ -38,6 +44,7 @@ void LabellingBar::on_load_labels()
   }
   labelling_manager->sync();
   labelling_manager->analyze(&std::cout);
+  collection_change_signal.emit();
 }
 
 void LabellingBar::on_save_labels()
