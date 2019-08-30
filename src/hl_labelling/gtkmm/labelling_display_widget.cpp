@@ -63,5 +63,14 @@ void LabellingDisplayWidget::annotateImg(const std::string& name)
                   cv::LINE_AA);
     }
   }
+  else
+  {
+    std::cout << "No labelling manager available for " << source_id << std::endl;
+  }
+}
+void LabellingDisplayWidget::addProvider(std::unique_ptr<hl_monitoring::ImageProvider> provider)
+{
+  labelling_manager->importMetaData(provider->getMetaInformation());
+  MultiCameraWidget::addProvider(std::move(provider));
 }
 }  // namespace hl_labelling

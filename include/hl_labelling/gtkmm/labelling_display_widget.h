@@ -13,6 +13,9 @@ public:
 
   void annotateImg(const std::string& name) override;
 
+protected:
+  void addProvider(std::unique_ptr<hl_monitoring::ImageProvider> provider) override;
+
 private:
   /**
    * Access to the labelling manager concerned by this labelling bar.

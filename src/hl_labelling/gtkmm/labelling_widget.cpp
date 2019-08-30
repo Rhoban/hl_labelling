@@ -20,8 +20,9 @@ LabellingWidget::~LabellingWidget()
 
 void LabellingWidget::mouseClick(const hl_communication::VideoSourceID& source_id, const cv::Point2f& img_pos)
 {
+  const hl_communication::VideoSourceID& detailed_source_id = display_area.getDetailedSourceID(source_id);
   hl_communication::LabelMsg label;
-  label.set_frame_index(display_area.getFrameIndex(source_id));
+  label.set_frame_index(display_area.getFrameIndex(detailed_source_id));
   // int team_id = labelling_bar.getLabellingChooser().getTeamID();
   int obj_id = labelling_bar.getLabellingChooser().getObjID();
   switch (labelling_bar.getLabellingChooser().getObjectType())
@@ -32,7 +33,7 @@ void LabellingWidget::mouseClick(const hl_communication::VideoSourceID& source_i
       ball->set_ball_id(obj_id);
       ball->mutable_center()->set_x(img_pos.x);
       ball->mutable_center()->set_y(img_pos.y);
-      manager.push(source_id, label);
+      manager.push(detailed_source_id, label);
       display_area.step(false);
       std::cout << "adding a ball" << std::endl;
       break;
@@ -46,7 +47,7 @@ void LabellingWidget::mouseClick(const hl_communication::VideoSourceID& source_i
     default:
       std::cout << "unkown object type" << std::endl;
   }
-  std::string source_name = display_area.getName(source_id);
+  std::string source_name = display_area.getName(detailed_source_id);
   std::cout << "Click on " << source_name << " at " << img_pos << std::endl;
 }
 
