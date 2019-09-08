@@ -13,6 +13,12 @@ public:
 
   void annotateImg(const std::string& name) override;
 
+  /**
+   * Uses a ManualPoseSolver to specify multiple points from the field, thus allowing to recover the pose of the camera.
+   * Uses the current image displayed by source_id
+   */
+  void launchManualFieldSolver(const hl_communication::VideoSourceID& source_id);
+
 protected:
   void addProvider(std::unique_ptr<hl_monitoring::ImageProvider> provider) override;
 

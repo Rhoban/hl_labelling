@@ -320,6 +320,22 @@ std::map<int, std::vector<hl_communication::RobotMessage>> VideoLabellingManager
 void VideoLabellingManager::summarize(std::ostream* out) const
 {
   *out << "metainfo: " << meta_information.frames_size() << " frames" << std::endl;
+  int nb_moving_frames = 0;
+  for (const FrameEntry& frame_entry : meta_information.frames())
+    if (frame_entry.status() == FrameStatus::MOVING)
+      nb_moving_frames++;
+  *out << "nb moving frames:" << nb_moving_frames << std::endl;
+  int nb_field_labels = 0;
+  for (const auto& entry : labels)
+  {
+    int nb_matches = entry.second.field_matches_size();
+    if (nb_matches > 0)
+    {
+      *out << "Field match annotation at " << entry.first << " with " << nb_matches << " matches" << std::endl;
+      nb_field_labels++;
+    }
+  }
+  std::cout << "Nb frames labelled: " << nb_field_labels << std::endl;
 }
 
 }  // namespace hl_labelling

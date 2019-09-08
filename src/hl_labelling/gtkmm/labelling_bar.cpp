@@ -43,6 +43,7 @@ void LabellingBar::on_load_labels()
     labelling_manager->importLabels(label_file);
   }
   labelling_manager->sync();
+  labelling_manager->summarize(&std::cout);
   labelling_manager->analyze(&std::cout);
   collection_change_signal.emit();
 }
