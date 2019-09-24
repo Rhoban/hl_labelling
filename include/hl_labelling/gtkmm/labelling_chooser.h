@@ -14,12 +14,22 @@ public:
   {
     Field,
     Ball,
-    Robot
+    Robot,
+    None
   };
   LabellingChooser();
 
+  /**
+   * Return ObjectType::None if no labelling mode is selected
+   */
   ObjectType getObjectType() const;
+  /**
+   * Return -1 if no labelling mode is selected or if team_id is not relevant for current object
+   */
   int getTeamID() const;
+  /**
+   * Return -1 if no labelling mode is selected or if obj_id is not relevant for current object
+   */
   int getObjID() const;
 
   static std::string objectTypeToStr(ObjectType type);

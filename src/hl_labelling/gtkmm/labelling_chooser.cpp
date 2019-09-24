@@ -19,15 +19,36 @@ LabellingChooser::LabellingChooser()
 
 LabellingChooser::ObjectType LabellingChooser::getObjectType() const
 {
-  return getActiveRow()[tree_model.obj_type];
+  try
+  {
+    return getActiveRow()[tree_model.obj_type];
+  }
+  catch (const std::out_of_range& exc)
+  {
+    return ObjectType::None;
+  }
 }
 int LabellingChooser::getTeamID() const
 {
-  return getActiveRow()[tree_model.team_id];
+  try
+  {
+    return getActiveRow()[tree_model.team_id];
+  }
+  catch (const std::out_of_range& exc)
+  {
+    return -1;
+  }
 }
 int LabellingChooser::getObjID() const
 {
-  return getActiveRow()[tree_model.obj_id];
+  try
+  {
+    return getActiveRow()[tree_model.obj_id];
+  }
+  catch (const std::out_of_range& exc)
+  {
+    return -1;
+  }
 }
 std::string LabellingChooser::objectTypeToStr(ObjectType type)
 {

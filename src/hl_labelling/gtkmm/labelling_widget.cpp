@@ -1,5 +1,9 @@
 #include <hl_labelling/gtkmm/labelling_widget.h>
 
+#include <hl_monitoring/gtkmm/dialogs.h>
+
+using namespace hl_monitoring;
+
 namespace hl_labelling
 {
 LabellingWidget::LabellingWidget(const hl_monitoring::Field& field)
@@ -20,11 +24,17 @@ LabellingWidget::~LabellingWidget()
 
 void LabellingWidget::mouseClick(const hl_communication::VideoSourceID& source_id, const cv::Point2f& img_pos)
 {
+  if (MultiCameraWidget::isTopViewID(source_id))
+  {
+    showMessage(getWindow(this), "Invalid window", "Cannot label from TopView", Gtk::MessageType::MESSAGE_ERROR);
+    return;
+  }
   const hl_communication::VideoSourceID& detailed_source_id = display_area.getDetailedSourceID(source_id);
   hl_communication::LabelMsg label;
   label.set_frame_index(display_area.getFrameIndex(detailed_source_id));
   // int team_id = labelling_bar.getLabellingChooser().getTeamID();
   int obj_id = labelling_bar.getLabellingChooser().getObjID();
+  std::string label_error;
   switch (labelling_bar.getLabellingChooser().getObjectType())
   {
     case LabellingChooser::Ball:
@@ -39,14 +49,20 @@ void LabellingWidget::mouseClick(const hl_communication::VideoSourceID& source_i
       break;
     }
     case LabellingChooser::Field:
-      std::cout << "adding a field tag" << std::endl;
+      label_error = "Field tagging not implemented";
       break;
     case LabellingChooser::Robot:
-      std::cout << "Robots are not supported now" << std::endl;
+      label_error = "Robot tagging not implemented";
+      break;
+    case LabellingChooser::None:
+      label_error = "No active labelling mode";
       break;
     default:
-      std::cout << "unkown object type" << std::endl;
+      label_error = "Unknown labelling object type";
   }
+  if (label_error != "")
+    showMessage(getWindow(this), "Labelling Error", label_error, Gtk::MessageType::MESSAGE_ERROR);
+
   std::string source_name = display_area.getName(detailed_source_id);
   std::cout << "Click on " << source_name << " at " << img_pos << std::endl;
 }
