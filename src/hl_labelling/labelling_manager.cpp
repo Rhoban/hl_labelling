@@ -45,6 +45,26 @@ void LabellingManager::push(const hl_communication::VideoSourceID& source_id, co
     }
   }
 }
+
+LabelMsg LabellingManager::getHistoryBasedLabel(uint64_t utc_ts)
+{
+  LabelMsg msg;
+  for (const auto& ball : getBalls(utc_ts))
+  {
+    BallMsg* ball_msg = msg.add_balls();
+    ball_msg->set_ball_id(ball.first);
+    ball_msg->set_radius(ball_radius);
+    cvToProtobuf(eigen2CV(ball.second), ball_msg->mutable_center_in_field());
+  }
+  for (const auto& robot : getRobots(utc_ts))
+  {
+    RobotMessage* robot_msg = msg.add_robots();
+    robot_msg->mutable_robot_id()->CopyFrom(robot.first);
+    cvToProtobuf(eigen2CV(robot.second), robot_msg->mutable_robot_in_field());
+  }
+  return msg;
+}
+
 void LabellingManager::pushManualPose(const hl_communication::VideoSourceID& source_id, int frame_index,
                                       const Eigen::Affine3d& camera_from_world)
 {

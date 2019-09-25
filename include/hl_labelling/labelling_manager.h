@@ -37,6 +37,11 @@ public:
   void push(const hl_communication::VideoSourceID& source_id, const hl_communication::LabelMsg& label);
 
   /**
+   * Creates a single LabelMsg based on all the known labels.
+   */
+  hl_communication::LabelMsg getHistoryBasedLabel(uint64_t utc_ts);
+
+  /**
    * Push a manual pose to the given source_id.
    * TODO: this should be removed and update of the pose handled inside the labelling_manager
    */

@@ -1,4 +1,5 @@
 #include <hl_labelling/gtkmm/labelling_display_widget.h>
+#include <hl_labelling/label_drawer.h>
 #include <robot_model/camera_model.h>
 
 #include <opencv2/imgproc.hpp>
@@ -22,20 +23,8 @@ void LabellingDisplayWidget::annotateImg(const std::string& name)
     hl_communication::CameraMetaInformation camera_information;
     labelling_manager->exportCorrectedFrame(source_id, timestamp, &camera_information);
     field.tagLines(camera_information, &display_img, cv::Scalar(0, 0, 0), 1.0, 10);
-    // Draw balls
-    for (const auto& entry : labelling_manager->getBalls(timestamp))
-    {
-      int ball_id = entry.first;
-      cv::Scalar ball_color = cv::Scalar(0, 0, 255);
-      const Eigen::Vector3d& ball_in_field = entry.second;
-      cv::Point2f ball_in_img;
-      if (fieldToImg(eigen2CV(ball_in_field), camera_information, &ball_in_img))
-      {
-        cv::circle(display_img, ball_in_img, 2, ball_color, CV_FILLED, cv::LINE_AA);
-      }
-      cv::putText(display_img, std::to_string(ball_id), ball_in_img, cv::FONT_HERSHEY_PLAIN, 1.0, ball_color, 1,
-                  cv::LINE_AA);
-    }
+    LabelDrawer label_drawer;
+    label_drawer.drawNatural(camera_information, labelling_manager->getHistoryBasedLabel(timestamp), &display_img);
     // Draw robots
     for (const auto& entry : labelling_manager->getRobots(timestamp))
     {
