@@ -32,7 +32,7 @@ void LabellingWidget::mouseClick(const hl_communication::VideoSourceID& source_i
   const hl_communication::VideoSourceID& detailed_source_id = display_area.getDetailedSourceID(source_id);
   hl_communication::LabelMsg label;
   label.set_frame_index(display_area.getFrameIndex(detailed_source_id));
-  // int team_id = labelling_bar.getLabellingChooser().getTeamID();
+  int team_id = labelling_bar.getLabellingChooser().getTeamID();
   int obj_id = labelling_bar.getLabellingChooser().getObjID();
   std::string label_error;
   switch (labelling_bar.getLabellingChooser().getObjectType())
@@ -45,15 +45,23 @@ void LabellingWidget::mouseClick(const hl_communication::VideoSourceID& source_i
       ball->mutable_center()->set_y(img_pos.y);
       manager.push(detailed_source_id, label);
       display_area.step(false);
-      std::cout << "adding a ball" << std::endl;
       break;
     }
     case LabellingChooser::Field:
       label_error = "Field tagging not implemented";
       break;
     case LabellingChooser::Robot:
-      label_error = "Robot tagging not implemented";
+    {
+      hl_communication::RobotMessage* robot = label.add_robots();
+      hl_communication::RobotIdentifier* robot_id = robot->mutable_robot_id();
+      robot_id->set_team_id(team_id);
+      robot_id->set_robot_id(obj_id);
+      robot->mutable_ground_position()->set_x(img_pos.x);
+      robot->mutable_ground_position()->set_y(img_pos.y);
+      manager.push(detailed_source_id, label);
+      display_area.step(false);
       break;
+    }
     case LabellingChooser::None:
       label_error = "No active labelling mode";
       break;

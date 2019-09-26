@@ -24,6 +24,8 @@ public:
   void pushMsg(const hl_communication::LabelMsg& msg);
   void pushManualPose(int frame_index, const Eigen::Affine3d& camera_from_field);
 
+  hl_communication::LabelMsg getLabel(int frame_idx) const;
+
   /**
    * Remove all ball labels from the current labelCollection
    */

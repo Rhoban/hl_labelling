@@ -42,6 +42,12 @@ public:
   hl_communication::LabelMsg getHistoryBasedLabel(uint64_t utc_ts);
 
   /**
+   * Return the manual label corresponding to the given frame_idx, if no label has been specified yet,
+   * return an empty LabelMsg
+   */
+  hl_communication::LabelMsg getLabel(const hl_communication::VideoSourceID& source_id, int frame_idx) const;
+
+  /**
    * Push a manual pose to the given source_id.
    * TODO: this should be removed and update of the pose handled inside the labelling_manager
    */

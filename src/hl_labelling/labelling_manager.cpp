@@ -65,6 +65,11 @@ LabelMsg LabellingManager::getHistoryBasedLabel(uint64_t utc_ts)
   return msg;
 }
 
+LabelMsg LabellingManager::getLabel(const hl_communication::VideoSourceID& source_id, int frame_idx) const
+{
+  return managers.at(source_id).getLabel(frame_idx);
+}
+
 void LabellingManager::pushManualPose(const hl_communication::VideoSourceID& source_id, int frame_index,
                                       const Eigen::Affine3d& camera_from_world)
 {
@@ -192,7 +197,6 @@ void LabellingManager::syncPoses()
 
 void LabellingManager::syncBalls()
 {
-  std::cout << "syncing balls" << std::endl;
   balls_in_field.clear();
   for (const auto& entry : managers)
   {
@@ -243,26 +247,25 @@ void LabellingManager::syncRobots()
   for (const auto& entry : managers)
   {
     const VideoSourceID source_id = entry.first;
-    if (!source_id.has_robot_source())
-    {
-      continue;
-    }
-    const RobotIdentifier& robot_id = source_id.robot_source().robot_id();
-    const hl_communication::VideoMetaInformation& meta_information = entry.second.getMetaInformation();
     // Get robots based on projection of their camera on the ground
-    for (int frame_idx = 0; frame_idx < meta_information.frames_size(); frame_idx++)
+    if (source_id.has_robot_source())
     {
-      uint64_t utc_ts = getTimeStamp(meta_information, frame_idx);
-      Eigen::Affine3d camera_from_field = getCameraPose(source_id, utc_ts);
-      // Currently, the position of the robot is the position of the camera projected in the field
-      Eigen::Vector3d camera_in_field = camera_from_field.inverse() * Eigen::Vector3d::Zero();
-      camera_in_field.z() = 0;
-      if (robots_in_field.count(robot_id) == 0)
+      const RobotIdentifier& robot_id = source_id.robot_source().robot_id();
+      const hl_communication::VideoMetaInformation& meta_information = entry.second.getMetaInformation();
+      for (int frame_idx = 0; frame_idx < meta_information.frames_size(); frame_idx++)
       {
-        robots_in_field[robot_id] =
-            std::unique_ptr<rhoban_utils::HistoryVector3d>(new rhoban_utils::HistoryVector3d(-1));
+        uint64_t utc_ts = getTimeStamp(meta_information, frame_idx);
+        Eigen::Affine3d camera_from_field = getCameraPose(source_id, utc_ts);
+        // Currently, the position of the robot is the position of the camera projected in the field
+        Eigen::Vector3d camera_in_field = camera_from_field.inverse() * Eigen::Vector3d::Zero();
+        camera_in_field.z() = 0;
+        if (robots_in_field.count(robot_id) == 0)
+        {
+          robots_in_field[robot_id] =
+              std::unique_ptr<rhoban_utils::HistoryVector3d>(new rhoban_utils::HistoryVector3d(-1));
+        }
+        robots_in_field[robot_id]->pushValue(utc_ts, camera_in_field, false);
       }
-      robots_in_field[robot_id]->pushValue(utc_ts, camera_in_field, false);
     }
     // Get robots based on explicit human tags
     for (const auto& robot_entry : entry.second.getRobotLabels())

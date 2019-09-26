@@ -134,6 +134,14 @@ void VideoLabellingManager::pushMsg(const LabelMsg& msg)
   exportLabel(msg, &(labels[frame_index]));
 }
 
+LabelMsg VideoLabellingManager::getLabel(int frame_idx) const
+{
+  if (labels.count(frame_idx) > 0)
+    return labels.at(frame_idx);
+  LabelMsg label;
+  label.set_frame_index(frame_idx);
+  return label;
+}
 void VideoLabellingManager::clearBall(int id)
 {
   for (auto& entry : labels)

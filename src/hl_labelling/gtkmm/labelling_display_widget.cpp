@@ -18,13 +18,17 @@ void LabellingDisplayWidget::annotateImg(const std::string& name)
   uint64_t timestamp = sources[name].timestamp;
   hl_communication::VideoSourceID source_id = sources[name].source_id;
   cv::Mat display_img = sources[name].display_image;
+  LabelDrawer label_drawer;
+  hl_communication::LabelMsg history_label = labelling_manager->getHistoryBasedLabel(timestamp);
   if (labelling_manager->hasSource(source_id))
   {
+    int frame_idx = getFrameIndex(source_id);
     hl_communication::CameraMetaInformation camera_information;
     labelling_manager->exportCorrectedFrame(source_id, timestamp, &camera_information);
     field.tagLines(camera_information, &display_img, cv::Scalar(0, 0, 0), 1.0, 10);
-    LabelDrawer label_drawer;
-    label_drawer.drawNatural(camera_information, labelling_manager->getHistoryBasedLabel(timestamp), &display_img);
+    label_drawer.drawNatural(camera_information, history_label, &display_img);
+    hl_communication::LabelMsg frame_label = labelling_manager->getLabel(source_id, frame_idx);
+    label_drawer.drawNatural(camera_information, frame_label, &display_img);
     // Draw robots
     for (const auto& entry : labelling_manager->getRobots(timestamp))
     {
@@ -41,20 +45,12 @@ void LabellingDisplayWidget::annotateImg(const std::string& name)
   }
   else if (isTopViewID(source_id))
   {
-    for (const auto& entry : labelling_manager->getBalls(timestamp))
-    {
-      int ball_id = entry.first;
-      cv::Scalar ball_color = cv::Scalar(0, 0, 255);
-      const Eigen::Vector3d& ball_in_field = entry.second;
-      cv::Point ball_in_img = top_view_drawer.getImgFromField(manager.getField(), eigen2CV(ball_in_field));
-      cv::circle(display_img, ball_in_img, 2, ball_color, CV_FILLED, cv::LINE_AA);
-      cv::putText(display_img, std::to_string(ball_id), ball_in_img, cv::FONT_HERSHEY_PLAIN, 1.0, ball_color, 1,
-                  cv::LINE_AA);
-    }
+    label_drawer.drawTopView(manager.getField(), top_view_drawer, history_label, &display_img);
   }
   else
   {
     std::cout << "No labelling manager available for " << source_id << std::endl;
+    return;
   }
 }
 void LabellingDisplayWidget::addProvider(std::unique_ptr<hl_monitoring::ImageProvider> provider)
