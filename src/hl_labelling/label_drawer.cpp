@@ -76,5 +76,13 @@ void LabelDrawer::draw(FieldToImgConverter converter, const hl_communication::La
       }
     }
   }
+  for (const Match2D3DMsg& match : data.field_matches())
+  {
+    cv::Scalar color(0, 0, 0);
+    cv::Point2f img_pos = protobufToCV(match.img_pos());
+    int marker_size = 15;
+    int marker_thickness = 2;
+    cv::drawMarker(*out, img_pos, color, cv::MarkerTypes::MARKER_CROSS, marker_size, marker_thickness);
+  }
 }
 }  // namespace hl_labelling

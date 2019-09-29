@@ -1,5 +1,8 @@
 #include <hl_labelling/gtkmm/labelling_display_widget.h>
 #include <hl_labelling/label_drawer.h>
+
+#include <hl_monitoring/manual_pose_solver.h>
+
 #include <robot_model/camera_model.h>
 
 #include <opencv2/imgproc.hpp>
@@ -53,6 +56,37 @@ void LabellingDisplayWidget::annotateImg(const std::string& name)
     return;
   }
 }
+
+void LabellingDisplayWidget::launchManualFieldSolver(const hl_communication::VideoSourceID& source_id)
+{
+  video_ctrl.force_pause();
+  std::string name = getName(source_id);
+  uint64_t frame_ts = sources.at(name).timestamp;
+  uint32_t frame_index = getFrameIndex(source_id);
+  hl_monitoring::CalibratedImage calib_img = sources.at(name).calibrated_image;
+  hl_monitoring::ManualPoseSolver solver(calib_img.getImg(), calib_img.getCameraInformation().camera_parameters(),
+                                         field);
+  Eigen::Affine3d initial_guess = labelling_manager->getCameraPose(source_id, frame_ts);
+  hl_communication::Pose3D pose;
+  setProtobufFromAffine(initial_guess, &pose);
+  std::vector<hl_communication::Match2D3DMsg> matches;
+  if (solver.solve(&pose, &matches))
+  {
+    hl_communication::LabelMsg label;
+    Eigen::Affine3d camera_from_world = getAffineFromProtobuf(pose);
+    label.set_frame_index(frame_index);
+    for (const hl_communication::Match2D3DMsg& match : matches)
+    {
+      label.add_field_matches()->CopyFrom(match);
+    }
+    labelling_manager->push(source_id, label);
+    labelling_manager->pushManualPose(source_id, frame_index, camera_from_world);
+    sync();
+  }
+  // Update match draws
+  step(false);
+}
+
 void LabellingDisplayWidget::addProvider(std::unique_ptr<hl_monitoring::ImageProvider> provider)
 {
   labelling_manager->importMetaData(provider->getMetaInformation());

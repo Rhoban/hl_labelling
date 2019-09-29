@@ -48,8 +48,10 @@ void LabellingWidget::mouseClick(const hl_communication::VideoSourceID& source_i
       break;
     }
     case LabellingChooser::Field:
-      label_error = "Field tagging not implemented";
+    {
+      display_area.launchManualFieldSolver(source_id);
       break;
+    }
     case LabellingChooser::Robot:
     {
       hl_communication::RobotMessage* robot = label.add_robots();

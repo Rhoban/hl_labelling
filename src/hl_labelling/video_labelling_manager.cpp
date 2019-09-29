@@ -48,7 +48,7 @@ int VideoLabellingManager::getNextPoseIdx(uint64_t timestamp)
 
 Eigen::Affine3d VideoLabellingManager::getCorrectedCameraPose(uint64_t timestamp)
 {
-  if (relative_pose_history.size() == 0 && meta_information.has_default_pose())
+  if (manual_poses.size() == 0 && relative_pose_history.size() == 0 && meta_information.has_default_pose())
   {
     return getAffineFromProtobuf(meta_information.default_pose());
   }
