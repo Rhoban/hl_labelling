@@ -18,6 +18,8 @@ public:
    */
   void on_label_collection_update();
 
+  void on_manager_loaded();
+
 protected:
   LabellingManager manager;
   /**

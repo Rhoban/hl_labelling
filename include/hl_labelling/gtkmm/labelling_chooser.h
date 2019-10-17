@@ -1,5 +1,7 @@
 #pragma once
 
+#include <hl_communication/message_manager.h>
+
 #include <gtkmm-2.4/gtkmm.h>
 
 namespace hl_labelling
@@ -31,6 +33,12 @@ public:
    * Return -1 if no labelling mode is selected or if obj_id is not relevant for current object
    */
   int getObjID() const;
+
+  /**
+   * Actualize the list of robots which can potentially be drawn
+   */
+  void updateRobots(const std::map<hl_communication::RobotIdentifier, hl_communication::MessageManager::TeamColor>&
+                        robot_colors) const;
 
   static std::string objectTypeToStr(ObjectType type);
 

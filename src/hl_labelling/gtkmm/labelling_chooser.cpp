@@ -1,4 +1,8 @@
 #include <hl_labelling/gtkmm/labelling_chooser.h>
+#include <string>
+#include <map>
+#include <sstream>
+#include <iostream>
 
 namespace hl_labelling
 {
@@ -50,6 +54,16 @@ int LabellingChooser::getObjID() const
     return -1;
   }
 }
+
+void LabellingChooser::updateRobots(
+    const std::map<hl_communication::RobotIdentifier, hl_communication::MessageManager::TeamColor>& robot_colors) const
+{
+  for (const auto& entry : robot_colors)
+  {
+    std::cout << entry.first << " -> " << entry.second << std::endl;
+  }
+}
+
 std::string LabellingChooser::objectTypeToStr(ObjectType type)
 {
   switch (type)

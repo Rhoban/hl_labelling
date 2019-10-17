@@ -14,6 +14,7 @@ public:
   virtual ~LabellingBar();
 
   const LabellingChooser& getLabellingChooser() const;
+  LabellingChooser* mutableLabellingChooser();
 
   /**
    * This signal is emitted every time the labelling_manager collection is changed by the labelling bar

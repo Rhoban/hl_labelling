@@ -16,6 +16,7 @@ LabellingWidget::LabellingWidget(const hl_monitoring::Field& field)
   display_area.registerClickHandler([this](const hl_communication::VideoSourceID& source_id,
                                            const cv::Point2f& img_pos) { this->mouseClick(source_id, img_pos); });
   labelling_bar.signal_collection_changed().connect(sigc::mem_fun(this, &LabellingWidget::on_label_collection_update));
+  display_area.signal_manager_loaded().connect(sigc::mem_fun(this, &LabellingWidget::on_manager_loaded));
 }
 
 LabellingWidget::~LabellingWidget()
@@ -80,5 +81,12 @@ void LabellingWidget::mouseClick(const hl_communication::VideoSourceID& source_i
 void LabellingWidget::on_label_collection_update()
 {
   display_area.step(false);
+}
+
+void LabellingWidget::on_manager_loaded()
+{
+  labelling_bar.mutableLabellingChooser()->updateRobots(
+      display_area.getMonitoringManager().getMessageManager().getRobotsColors());
+  std::cout << "A manager has been loaded" << std::endl;
 }
 }  // namespace hl_labelling

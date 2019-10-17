@@ -29,6 +29,11 @@ const LabellingChooser& LabellingBar::getLabellingChooser() const
   return labelling_chooser;
 }
 
+LabellingChooser* LabellingBar::mutableLabellingChooser()
+{
+  return &labelling_chooser;
+}
+
 sigc::signal<void> LabellingBar::signal_collection_changed()
 {
   return collection_change_signal;
