@@ -19,6 +19,9 @@ public:
     Robot,
     None
   };
+
+  typedef hl_communication::TeamColor TeamColor;
+
   LabellingChooser();
 
   /**
@@ -34,11 +37,12 @@ public:
    */
   int getObjID() const;
 
+  TeamColor getTeamColor() const;
+
   /**
    * Actualize the list of robots which can potentially be drawn
    */
-  void updateRobots(const std::map<hl_communication::RobotIdentifier, hl_communication::MessageManager::TeamColor>&
-                        robot_colors) const;
+  void updateRobots(const hl_communication::RobotColorMap& robot_colors);
 
   static std::string objectTypeToStr(ObjectType type);
 
@@ -51,6 +55,7 @@ private:
     Gtk::TreeModelColumn<std::string> col_name;
     Gtk::TreeModelColumn<ObjectType> obj_type;
     Gtk::TreeModelColumn<int> team_id;
+    Gtk::TreeModelColumn<int> team_color;
     Gtk::TreeModelColumn<int> obj_id;
   };
   /**
@@ -58,7 +63,7 @@ private:
    * - If team_id is not specified or negative: the labelling option is considered as independent from team
    * - If obj_id is not specified or negative: there are no element for obj_id
    */
-  void addRow(ObjectType obj_type, int team_id = -1, int obj_id = -1);
+  void addRow(ObjectType obj_type, int team_id = -1, int obj_id = -1, TeamColor color = TeamColor::UNKNOWN);
 
   Gtk::TreeModel::Row getActiveRow() const;
 

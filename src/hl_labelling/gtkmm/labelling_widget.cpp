@@ -61,6 +61,9 @@ void LabellingWidget::mouseClick(const hl_communication::VideoSourceID& source_i
       robot_id->set_robot_id(obj_id);
       robot->mutable_ground_position()->set_x(img_pos.x);
       robot->mutable_ground_position()->set_y(img_pos.y);
+      hl_communication::TeamColor color = labelling_bar.getLabellingChooser().getTeamColor();
+      std::cout << "Pushing a robot with team color id: " << color << std::endl;
+      robot->set_robot_color(color);
       manager.push(detailed_source_id, label);
       display_area.step(false);
       break;

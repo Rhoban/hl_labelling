@@ -1,5 +1,6 @@
 #pragma once
 
+#include <hl_communication/robot_color_map.h>
 #include <hl_labelling/video_labelling_manager.h>
 
 namespace hl_labelling
@@ -148,6 +149,7 @@ private:
    */
   std::map<hl_communication::RobotIdentifier, std::unique_ptr<rhoban_utils::HistoryBool>> robots_validity;
 
+  hl_communication::RobotColorMap robot_colors;
   /**
    * Radius of the ball used in [m]
    */

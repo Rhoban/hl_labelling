@@ -32,19 +32,6 @@ void LabellingDisplayWidget::annotateImg(const std::string& name)
     label_drawer.drawNatural(camera_information, history_label, &display_img);
     hl_communication::LabelMsg frame_label = labelling_manager->getLabel(source_id, frame_idx);
     label_drawer.drawNatural(camera_information, frame_label, &display_img);
-    // Draw robots
-    for (const auto& entry : labelling_manager->getRobots(timestamp))
-    {
-      cv::Scalar robot_color = cv::Scalar(255, 0, 255);
-      const Eigen::Vector3d& robot_in_field = entry.second;
-      cv::Point2f robot_in_img;
-      if (fieldToImg(eigen2CV(robot_in_field), camera_information, &robot_in_img))
-      {
-        cv::circle(display_img, robot_in_img, 3, robot_color, CV_FILLED, cv::LINE_AA);
-      }
-      std::string text = std::to_string(entry.first.team_id()) + "," + std::to_string(entry.first.robot_id());
-      cv::putText(display_img, text, robot_in_img, cv::FONT_HERSHEY_PLAIN, 1.0, robot_color, 1, cv::LINE_AA);
-    }
   }
   else if (isTopViewID(source_id))
   {

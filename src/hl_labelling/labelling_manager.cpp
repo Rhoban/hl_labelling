@@ -25,6 +25,9 @@ void LabellingManager::push(const hl_communication::VideoSourceID& source_id, co
                             bool update_histories)
 {
   managers.at(source_id).pushMsg(label);
+  for (const RobotMessage& robot : label.robots())
+    if (robot.has_robot_id() && robot.has_robot_color())
+      robot_colors.pushColor(robot.robot_id(), robot.robot_color());
   if (update_histories)
   {
     bool has_field_matches = label.field_matches_size() > 0;
@@ -61,6 +64,7 @@ LabelMsg LabellingManager::getHistoryBasedLabel(uint64_t utc_ts)
     RobotMessage* robot_msg = msg.add_robots();
     robot_msg->mutable_robot_id()->CopyFrom(robot.first);
     cvToProtobuf(eigen2CV(robot.second), robot_msg->mutable_robot_in_field());
+    robot_msg->set_robot_color(robot_colors.getColor(robot.first));
   }
   return msg;
 }

@@ -48,16 +48,33 @@ void LabelDrawer::draw(FieldToImgConverter converter, const hl_communication::La
   for (const RobotMessage& robot : data.robots())
   {
     cv::Scalar color(255, 0, 255);
-    cv::Point2f ball_center_in_img;
+    if (robot.has_robot_color())
+    {
+      switch (robot.robot_color())
+      {
+        case TeamColor::BLUE:
+          color = cv::Scalar(255, 0, 0);
+          break;
+        case TeamColor::RED:
+          color = cv::Scalar(0, 0, 255);
+          break;
+        case TeamColor::CONFLICT:
+          color = cv::Scalar(0, 255, 255);
+          break;
+        default:
+          color = cv::Scalar(255, 0, 255);
+      }
+    }
+
+    cv::Point2f robot_center_in_img;
     bool valid = true;
     if (robot.has_ground_position())
     {
-      ball_center_in_img = protobufToCV(robot.ground_position());
+      robot_center_in_img = protobufToCV(robot.ground_position());
     }
     else if (robot.has_robot_in_field())
     {
-      valid = converter(protobufToCV(robot.robot_in_field()), &ball_center_in_img);
-      color = cv::Scalar(0, 0, 255);
+      valid = converter(protobufToCV(robot.robot_in_field()), &robot_center_in_img);
     }
     else
     {
@@ -65,14 +82,15 @@ void LabelDrawer::draw(FieldToImgConverter converter, const hl_communication::La
     }
     if (valid)
     {
-      // TODO: temporary, to be replaced by a sphere of appropriate radius
-      cv::circle(*out, ball_center_in_img, ball_radius_px, color, CV_FILLED, cv::LineTypes::LINE_AA);
+      int robot_radius_px = 5;
+      // TODO: temporary, to be replaced by something else
+      cv::circle(*out, robot_center_in_img, robot_radius_px, color, CV_FILLED, cv::LineTypes::LINE_AA);
       if (robot.has_robot_id())
       {
         RobotIdentifier robot_id = robot.robot_id();
         std::string text = std::to_string(robot_id.team_id()) + "," + std::to_string(robot_id.robot_id());
         cv::Scalar text_color(0, 0, 0);
-        TextDrawer::drawCenteredText(out, text, ball_center_in_img, text_color);
+        TextDrawer::drawCenteredText(out, text, robot_center_in_img, text_color);
       }
     }
   }
