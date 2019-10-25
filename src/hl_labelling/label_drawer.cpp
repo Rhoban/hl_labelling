@@ -1,5 +1,6 @@
 #include <hl_labelling/label_drawer.h>
 
+#include <hl_monitoring/drawers/player_drawer.h>
 #include <hl_monitoring/drawers/text_drawer.h>
 
 #include <opencv2/imgproc.hpp>
@@ -71,27 +72,22 @@ void LabelDrawer::draw(FieldToImgConverter converter, const hl_communication::La
     if (robot.has_ground_position())
     {
       robot_center_in_img = protobufToCV(robot.ground_position());
+      int robot_radius_px = 5;
+      cv::circle(*out, robot_center_in_img, robot_radius_px, color, CV_FILLED, cv::LineTypes::LINE_AA);
     }
     else if (robot.has_robot_in_field())
     {
       valid = converter(protobufToCV(robot.robot_in_field()), &robot_center_in_img);
-    }
-    else
-    {
-      valid = false;
-    }
-    if (valid)
-    {
-      int robot_radius_px = 5;
-      // TODO: temporary, to be replaced by something else
-      cv::circle(*out, robot_center_in_img, robot_radius_px, color, CV_FILLED, cv::LineTypes::LINE_AA);
-      if (robot.has_robot_id())
-      {
-        RobotIdentifier robot_id = robot.robot_id();
-        std::string text = std::to_string(robot_id.team_id()) + "," + std::to_string(robot_id.robot_id());
-        cv::Scalar text_color(0, 0, 0);
-        TextDrawer::drawCenteredText(out, text, robot_center_in_img, text_color);
-      }
+      hl_communication::RobotMsg fake_msg;
+      fake_msg.mutable_robot_id()->CopyFrom(robot.robot_id());
+      hl_communication::WeightedPose* w_pose = fake_msg.mutable_perception()->add_self_in_field();
+      w_pose->set_probability(1.0);
+      hl_communication::PositionDistribution* pos = w_pose->mutable_pose()->mutable_position();
+      pos->set_x(robot.robot_in_field().x());
+      pos->set_y(robot.robot_in_field().y());
+      hl_monitoring::PlayerDrawer player_drawer;
+      player_drawer.setColor(color);
+      player_drawer.draw(converter, fake_msg, out);
     }
   }
   for (const Match2D3DMsg& match : data.field_matches())
