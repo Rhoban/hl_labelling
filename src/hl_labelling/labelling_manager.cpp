@@ -165,10 +165,8 @@ std::map<int, Eigen::Vector3d> LabellingManager::getBalls(uint64_t timestamp) co
 {
   std::map<int, Eigen::Vector3d> result;
   for (const auto& entry : balls_in_field)
-  {
-    result[entry.first] = entry.second->interpolate(timestamp);
-    // TODO: take validity into account
-  }
+    if (entry.second->isActive(timestamp))
+      result[entry.first] = entry.second->getPosition(timestamp);
   return result;
 }
 
@@ -176,10 +174,8 @@ std::map<RobotIdentifier, Eigen::Vector3d> LabellingManager::getRobots(uint64_t 
 {
   std::map<RobotIdentifier, Eigen::Vector3d> result;
   for (const auto& entry : robots_in_field)
-  {
-    result[entry.first] = entry.second->interpolate(timestamp);
-    // TODO: take validity into account
-  }
+    if (entry.second->isActive(timestamp))
+      result[entry.first] = entry.second->getPosition(timestamp);
   return result;
 }
 
@@ -209,8 +205,6 @@ void LabellingManager::syncBalls()
     rhoban::CameraModel camera_model = intrinsicParametersToCameraModel(meta_information.camera_parameters());
     // Height of the ball is determined according to the ball radius
     rhoban_geometry::Plane ball_plane_in_field(Eigen::Vector3d::UnitZ(), ball_radius);
-    // TODO: import balls + pose
-    std::cout << entry.first << " has " << entry.second.getBallLabels().size() << " nb balls" << std::endl;
     for (const auto& ball_entry : entry.second.getBallLabels())
     {
       int frame_index = ball_entry.first;
@@ -229,10 +223,9 @@ void LabellingManager::syncBalls()
         {
           if (balls_in_field.count(ball_id) == 0)
           {
-            balls_in_field[ball_id] =
-                std::unique_ptr<rhoban_utils::HistoryVector3d>(new rhoban_utils::HistoryVector3d(-1));
+            balls_in_field[ball_id] = std::unique_ptr<ActivablePosHistory>(new ActivablePosHistory());
           }
-          balls_in_field[ball_id]->pushValue(utc_ts, ball_in_field, false);
+          balls_in_field[ball_id]->pushPosition(utc_ts, ball_in_field);
         }
         else
         {
@@ -265,10 +258,9 @@ void LabellingManager::syncRobots()
         camera_in_field.z() = 0;
         if (robots_in_field.count(robot_id) == 0)
         {
-          robots_in_field[robot_id] =
-              std::unique_ptr<rhoban_utils::HistoryVector3d>(new rhoban_utils::HistoryVector3d(-1));
+          robots_in_field[robot_id] = std::unique_ptr<ActivablePosHistory>(new ActivablePosHistory());
         }
-        robots_in_field[robot_id]->pushValue(utc_ts, camera_in_field, false);
+        robots_in_field[robot_id]->pushPosition(utc_ts, camera_in_field);
       }
     }
     // Get robots based on explicit human tags
@@ -292,10 +284,9 @@ void LabellingManager::syncRobots()
         {
           if (robots_in_field.count(robot_id) == 0)
           {
-            robots_in_field[robot_id] =
-                std::unique_ptr<rhoban_utils::HistoryVector3d>(new rhoban_utils::HistoryVector3d(-1));
+            robots_in_field[robot_id] = std::unique_ptr<ActivablePosHistory>(new ActivablePosHistory());
           }
-          robots_in_field[robot_id]->pushValue(utc_ts, robot_in_field, false);
+          robots_in_field[robot_id]->pushPosition(utc_ts, robot_in_field);
         }
         else
         {
@@ -304,6 +295,11 @@ void LabellingManager::syncRobots()
       }
     }
   }
+}
+
+void LabellingManager::updateColors(const hl_communication::RobotColorMap& colors)
+{
+  robot_colors = colors;
 }
 
 void LabellingManager::summarize(std::ostream* out) const
@@ -323,11 +319,12 @@ void LabellingManager::analyze(std::ostream* out) const
   for (const auto& entry : balls_in_field)
   {
     (*out) << "Ball : " << entry.first << std::endl;
-    for (const auto& ball : entry.second->getValues())
-    {
-      uint64_t ball_ts = ball.first / std::pow(10, 6);
-      std::cout << "\t" << ball_ts << " -> " << ball.second.transpose() << std::endl;
-    }
+    // TODO: This is not valid with activablePosMap
+    // for (const auto& ball : entry.second->getValues())
+    // {
+    //   uint64_t ball_ts = ball.first / std::pow(10, 6);
+    //   std::cout << "\t" << ball_ts << " -> " << ball.second.transpose() << std::endl;
+    // }
   }
 }
 

@@ -88,8 +88,10 @@ void LabellingWidget::on_label_collection_update()
 
 void LabellingWidget::on_manager_loaded()
 {
-  labelling_bar.mutableLabellingChooser()->updateRobots(
-      display_area.getMonitoringManager().getMessageManager().getRobotsColors());
+  const hl_communication::RobotColorMap& color_map =
+      display_area.getMonitoringManager().getMessageManager().getRobotsColors();
+  manager.updateColors(color_map);
+  labelling_bar.mutableLabellingChooser()->updateRobots(color_map);
   std::cout << "A manager has been loaded" << std::endl;
 }
 }  // namespace hl_labelling

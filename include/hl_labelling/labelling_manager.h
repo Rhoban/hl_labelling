@@ -1,6 +1,7 @@
 #pragma once
 
 #include <hl_communication/robot_color_map.h>
+#include <hl_labelling/activable_pos_history.h>
 #include <hl_labelling/video_labelling_manager.h>
 
 namespace hl_labelling
@@ -102,6 +103,8 @@ public:
    */
   void analyze(std::ostream* out) const;
 
+  void updateColors(const hl_communication::RobotColorMap& colors);
+
 private:
   /**
    * Updates poses for all video labelling manager
@@ -132,22 +135,12 @@ private:
   /**
    * Position of the balls in the field based on provided history
    */
-  std::map<int, std::unique_ptr<rhoban_utils::HistoryVector3d>> balls_in_field;
-
-  /**
-   * Stores the validity status of the ball position
-   */
-  std::map<int, std::unique_ptr<rhoban_utils::HistoryBool>> balls_validity;
+  std::map<int, std::unique_ptr<ActivablePosHistory>> balls_in_field;
 
   /**
    * Position of the robots in the field based on provided history
    */
-  std::map<hl_communication::RobotIdentifier, std::unique_ptr<rhoban_utils::HistoryVector3d>> robots_in_field;
-
-  /**
-   * Stores the validity status of the ball position
-   */
-  std::map<hl_communication::RobotIdentifier, std::unique_ptr<rhoban_utils::HistoryBool>> robots_validity;
+  std::map<hl_communication::RobotIdentifier, std::unique_ptr<ActivablePosHistory>> robots_in_field;
 
   hl_communication::RobotColorMap robot_colors;
   /**
