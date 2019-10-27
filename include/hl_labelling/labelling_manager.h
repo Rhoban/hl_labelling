@@ -55,6 +55,9 @@ public:
    */
   void pushManualPose(const hl_communication::VideoSourceID& source_id, int frame_index,
                       const Eigen::Affine3d& camera_from_world);
+  void clearBall(const hl_communication::VideoSourceID& source_id, int frame_index, size_t ball_id);
+  void clearRobot(const hl_communication::VideoSourceID& source_id, int frame_index,
+                  const hl_communication::RobotIdentifier& robot_id);
 
   void clearBall(int id);
   void clearAllBalls();
@@ -138,9 +141,14 @@ private:
   std::map<int, std::unique_ptr<ActivablePosHistory>> balls_in_field;
 
   /**
-   * Position of the robots in the field based on provided history
+   * Position of the robots in the field based on explicit labelling
    */
-  std::map<hl_communication::RobotIdentifier, std::unique_ptr<ActivablePosHistory>> robots_in_field;
+  std::map<hl_communication::RobotIdentifier, std::unique_ptr<ActivablePosHistory>> robots_by_tag;
+
+  /**
+   * Position of the robots based on the projection of their camera on the ground
+   */
+  std::map<hl_communication::RobotIdentifier, std::unique_ptr<ActivablePosHistory>> robots_by_camera_projection;
 
   hl_communication::RobotColorMap robot_colors;
   /**

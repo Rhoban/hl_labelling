@@ -29,6 +29,8 @@ public:
    */
   void disable(double t);
 
+  size_t isEmpty() const;
+
 private:
   /**
    * Position of the object

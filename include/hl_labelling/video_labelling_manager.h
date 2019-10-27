@@ -26,6 +26,9 @@ public:
 
   hl_communication::LabelMsg getLabel(int frame_idx) const;
 
+  void clearBall(int frame_index, size_t ball_id);
+  void clearRobot(int frame_index, const hl_communication::RobotIdentifier& robot_id);
+
   /**
    * Remove all ball labels from the current labelCollection
    */

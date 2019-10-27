@@ -11,7 +11,13 @@ public:
   LabellingWidget(const hl_monitoring::Field& field);
   virtual ~LabellingWidget();
 
-  void mouseClick(const hl_communication::VideoSourceID& source_name, const cv::Point2f& img_pos);
+  void mouseClick(const hl_communication::VideoSourceID& source_name, int button, const cv::Point2f& img_pos);
+
+  void label(const hl_communication::VideoSourceID& source_id, const cv::Point2f& img_pos);
+  /**
+   * Remove label of current mode in source_id at current frame
+   */
+  void unlabel(const hl_communication::VideoSourceID& source_id);
 
   /**
    * Updates the display everytime the label_collection changes

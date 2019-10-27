@@ -25,5 +25,9 @@ void ActivablePosHistory::disable(double t)
 {
   activity.pushValue(t, false, false);
 }
+size_t ActivablePosHistory::isEmpty() const
+{
+  return activity.size() == 0 && position.size() == 0;
+}
 
 }  // namespace hl_labelling

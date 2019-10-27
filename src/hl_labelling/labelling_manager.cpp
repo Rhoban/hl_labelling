@@ -79,6 +79,17 @@ void LabellingManager::pushManualPose(const hl_communication::VideoSourceID& sou
 {
   managers[source_id].pushManualPose(frame_index, camera_from_world);
 }
+void LabellingManager::clearBall(const hl_communication::VideoSourceID& source_id, int frame_index, size_t ball_id)
+{
+  managers.at(source_id).clearBall(frame_index, ball_id);
+  syncBalls();
+}
+void LabellingManager::clearRobot(const hl_communication::VideoSourceID& source_id, int frame_index,
+                                  const hl_communication::RobotIdentifier& robot_id)
+{
+  managers.at(source_id).clearRobot(frame_index, robot_id);
+  syncRobots();
+}
 
 void LabellingManager::clearBall(int id)
 {
@@ -173,9 +184,21 @@ std::map<int, Eigen::Vector3d> LabellingManager::getBalls(uint64_t timestamp) co
 std::map<RobotIdentifier, Eigen::Vector3d> LabellingManager::getRobots(uint64_t timestamp) const
 {
   std::map<RobotIdentifier, Eigen::Vector3d> result;
-  for (const auto& entry : robots_in_field)
+  for (const auto& entry : robots_by_camera_projection)
     if (entry.second->isActive(timestamp))
       result[entry.first] = entry.second->getPosition(timestamp);
+  std::vector<RobotIdentifier> robots_to_remove;
+  for (const auto& entry : robots_by_tag)
+  {
+    if (entry.second->isEmpty())
+      continue;
+    if (entry.second->isActive(timestamp))
+      result[entry.first] = entry.second->getPosition(timestamp);
+    else
+      robots_to_remove.push_back(entry.first);
+  }
+  for (const RobotIdentifier& robot_id : robots_to_remove)
+    result.erase(robot_id);
   return result;
 }
 
@@ -238,7 +261,8 @@ void LabellingManager::syncBalls()
 
 void LabellingManager::syncRobots()
 {
-  robots_in_field.clear();
+  robots_by_tag.clear();
+  robots_by_camera_projection.clear();
   rhoban_geometry::Plane ground_plane_in_field(Eigen::Vector3d::UnitZ(), 0.0);
 
   for (const auto& entry : managers)
@@ -256,11 +280,11 @@ void LabellingManager::syncRobots()
         // Currently, the position of the robot is the position of the camera projected in the field
         Eigen::Vector3d camera_in_field = camera_from_field.inverse() * Eigen::Vector3d::Zero();
         camera_in_field.z() = 0;
-        if (robots_in_field.count(robot_id) == 0)
+        if (robots_by_camera_projection.count(robot_id) == 0)
         {
-          robots_in_field[robot_id] = std::unique_ptr<ActivablePosHistory>(new ActivablePosHistory());
+          robots_by_camera_projection[robot_id] = std::unique_ptr<ActivablePosHistory>(new ActivablePosHistory());
         }
-        robots_in_field[robot_id]->pushPosition(utc_ts, camera_in_field);
+        robots_by_camera_projection[robot_id]->pushPosition(utc_ts, camera_in_field);
       }
     }
     // Get robots based on explicit human tags
@@ -282,11 +306,11 @@ void LabellingManager::syncRobots()
                                                             camera_from_field.inverse());
         if (success)
         {
-          if (robots_in_field.count(robot_id) == 0)
+          if (robots_by_tag.count(robot_id) == 0)
           {
-            robots_in_field[robot_id] = std::unique_ptr<ActivablePosHistory>(new ActivablePosHistory());
+            robots_by_tag[robot_id] = std::unique_ptr<ActivablePosHistory>(new ActivablePosHistory());
           }
-          robots_in_field[robot_id]->pushPosition(utc_ts, robot_in_field);
+          robots_by_tag[robot_id]->pushPosition(utc_ts, robot_in_field);
         }
         else
         {

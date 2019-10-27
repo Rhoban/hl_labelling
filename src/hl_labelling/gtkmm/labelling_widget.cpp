@@ -13,8 +13,10 @@ LabellingWidget::LabellingWidget(const hl_monitoring::Field& field)
   labelling_bar.show();
   add(display_area);
   display_area.show();
-  display_area.registerClickHandler([this](const hl_communication::VideoSourceID& source_id,
-                                           const cv::Point2f& img_pos) { this->mouseClick(source_id, img_pos); });
+  display_area.registerClickHandler(
+      [this](const hl_communication::VideoSourceID& source_id, int button, const cv::Point2f& img_pos) {
+        this->mouseClick(source_id, button, img_pos);
+      });
   labelling_bar.signal_collection_changed().connect(sigc::mem_fun(this, &LabellingWidget::on_label_collection_update));
   display_area.signal_manager_loaded().connect(sigc::mem_fun(this, &LabellingWidget::on_manager_loaded));
 }
@@ -23,13 +25,30 @@ LabellingWidget::~LabellingWidget()
 {
 }
 
-void LabellingWidget::mouseClick(const hl_communication::VideoSourceID& source_id, const cv::Point2f& img_pos)
+void LabellingWidget::mouseClick(const hl_communication::VideoSourceID& source_id, int button,
+                                 const cv::Point2f& img_pos)
 {
   if (MultiCameraWidget::isTopViewID(source_id))
   {
     showMessage(getWindow(this), "Invalid window", "Cannot label from TopView", Gtk::MessageType::MESSAGE_ERROR);
     return;
   }
+  switch (button)
+  {
+    case 1:
+      label(source_id, img_pos);
+      break;
+    case 3:
+      unlabel(source_id);
+      break;
+    default:
+      showMessage(getWindow(this), "Invalid button", "No support for mouseClick on  button " + std::to_string(button),
+                  Gtk::MessageType::MESSAGE_ERROR);
+  }
+}
+
+void LabellingWidget::label(const hl_communication::VideoSourceID& source_id, const cv::Point2f& img_pos)
+{
   const hl_communication::VideoSourceID& detailed_source_id = display_area.getDetailedSourceID(source_id);
   hl_communication::LabelMsg label;
   label.set_frame_index(display_area.getFrameIndex(detailed_source_id));
@@ -76,9 +95,44 @@ void LabellingWidget::mouseClick(const hl_communication::VideoSourceID& source_i
   }
   if (label_error != "")
     showMessage(getWindow(this), "Labelling Error", label_error, Gtk::MessageType::MESSAGE_ERROR);
+}
 
-  std::string source_name = display_area.getName(detailed_source_id);
-  std::cout << "Click on " << source_name << " at " << img_pos << std::endl;
+void LabellingWidget::unlabel(const hl_communication::VideoSourceID& source_id)
+{
+  std::string label_error;
+  try
+  {
+    const hl_communication::VideoSourceID& detailed_source_id = display_area.getDetailedSourceID(source_id);
+    int frame_idx = display_area.getFrameIndex(detailed_source_id);
+    int team_id = labelling_bar.getLabellingChooser().getTeamID();
+    int obj_id = labelling_bar.getLabellingChooser().getObjID();
+    switch (labelling_bar.getLabellingChooser().getObjectType())
+    {
+      case LabellingChooser::Ball:
+      {
+        manager.clearBall(detailed_source_id, frame_idx, obj_id);
+        display_area.step(false);
+        break;
+      }
+      case LabellingChooser::Robot:
+      {
+        hl_communication::RobotIdentifier robot_id;
+        robot_id.set_team_id(team_id);
+        robot_id.set_robot_id(obj_id);
+        manager.clearRobot(detailed_source_id, frame_idx, robot_id);
+        display_area.step(false);
+        break;
+      }
+      default:
+        label_error = "Unknown labelling object type";
+    }
+  }
+  catch (const std::out_of_range& exc)
+  {
+    label_error = exc.what();
+  }
+  if (label_error != "")
+    showMessage(getWindow(this), "Labelling Error", label_error, Gtk::MessageType::MESSAGE_ERROR);
 }
 
 void LabellingWidget::on_label_collection_update()

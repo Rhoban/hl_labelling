@@ -142,6 +142,42 @@ LabelMsg VideoLabellingManager::getLabel(int frame_idx) const
   label.set_frame_index(frame_idx);
   return label;
 }
+
+void VideoLabellingManager::clearBall(int frame_index, size_t ball_id)
+{
+  if (labels.count(frame_index) == 0)
+    throw std::out_of_range("No label active for frame: " + std::to_string(frame_index));
+  LabelMsg& label = labels.at(frame_index);
+  int nb_balls = label.balls_size();
+  // Protobuf does not allow to remove an element in a repeated field so swap and remove last
+  for (int i = 0; i < nb_balls; i++)
+  {
+    if (label.balls(i).ball_id() != ball_id)
+      continue;
+    label.mutable_balls()->SwapElements(i, nb_balls - 1);
+    label.mutable_balls()->RemoveLast();
+    break;
+  }
+}
+
+void VideoLabellingManager::clearRobot(int frame_index, const RobotIdentifier& robot_id)
+{
+  if (labels.count(frame_index) == 0)
+    throw std::out_of_range("No label active for frame: " + std::to_string(frame_index));
+  LabelMsg& label = labels.at(frame_index);
+  int nb_robots = label.robots_size();
+  // Protobuf does not allow to remove an element in a repeated field so swap and remove last
+  for (int i = 0; i < nb_robots; i++)
+  {
+    if (label.robots(i).robot_id() == robot_id)
+    {
+      label.mutable_robots()->SwapElements(i, nb_robots - 1);
+      label.mutable_robots()->RemoveLast();
+      break;
+    }
+  }
+}
+
 void VideoLabellingManager::clearBall(int id)
 {
   for (auto& entry : labels)
