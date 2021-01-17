@@ -31,15 +31,19 @@ LabellingWindow::LabellingWindow(std::unique_ptr<hl_monitoring::ReplayImageProvi
 {
   addBinding('c', "Run pose calibration for current frame", [this]() { this->startPoseCalibration(); });
   labelling_manager.importMetaData(provider->getMetaInformation());
-  cv::createTrackbar("viewMode", window_name, &view_mode, 3,
-                     [](int new_value, void* ptr) { ((LabellingWindow*)ptr)->updateTagMode(new_value); }, this);
-  cv::createTrackbar("tagMode", window_name, &tag_mode, 3,
-                     [](int new_value, void* ptr) { ((LabellingWindow*)ptr)->updateTagMode(new_value); }, this);
+  cv::createTrackbar(
+      "viewMode", window_name, &view_mode, 3,
+      [](int new_value, void* ptr) { ((LabellingWindow*)ptr)->updateTagMode(new_value); }, this);
+  cv::createTrackbar(
+      "tagMode", window_name, &tag_mode, 3,
+      [](int new_value, void* ptr) { ((LabellingWindow*)ptr)->updateTagMode(new_value); }, this);
   cv::setTrackbarMin("tagMode", window_name, 1);
-  cv::createTrackbar("objectID", window_name, &object_id, 6,
-                     [](int new_value, void* ptr) { ((LabellingWindow*)ptr)->updateObjectID(new_value); }, this);
-  cv::createTrackbar("teamID", window_name, &team_id, 30,
-                     [](int new_value, void* ptr) { ((LabellingWindow*)ptr)->updateTeamID(new_value); }, this);
+  cv::createTrackbar(
+      "objectID", window_name, &object_id, 6,
+      [](int new_value, void* ptr) { ((LabellingWindow*)ptr)->updateObjectID(new_value); }, this);
+  cv::createTrackbar(
+      "teamID", window_name, &team_id, 30,
+      [](int new_value, void* ptr) { ((LabellingWindow*)ptr)->updateTeamID(new_value); }, this);
 }
 
 void LabellingWindow::updateTime()
@@ -78,7 +82,7 @@ void LabellingWindow::paintImg()
       cv::Point2f ball_in_img;
       if (fieldToImg(eigen2CV(ball_in_field), information, &ball_in_img))
       {
-        cv::circle(display_img, ball_in_img, 2, ball_color, CV_FILLED, cv::LINE_AA);
+        cv::circle(display_img, ball_in_img, 2, ball_color, cv::FILLED, cv::LINE_AA);
       }
       cv::putText(display_img, std::to_string(ball_id), ball_in_img, cv::FONT_HERSHEY_PLAIN, 1.0, ball_color, 1,
                   cv::LINE_AA);
@@ -93,7 +97,7 @@ void LabellingWindow::paintImg()
       cv::Scalar robot_color(255, 0, 255);
       if (fieldToImg(eigen2CV(robot_in_field), information, &robot_in_img))
       {
-        cv::circle(display_img, robot_in_img, 3, robot_color, CV_FILLED, cv::LINE_AA);
+        cv::circle(display_img, robot_in_img, 3, robot_color, cv::FILLED, cv::LINE_AA);
       }
       std::string text = std::to_string(entry.first.team_id()) + "," + std::to_string(entry.first.robot_id());
       cv::putText(display_img, text, robot_in_img, cv::FONT_HERSHEY_PLAIN, 1.0, robot_color, 1, cv::LINE_AA);
