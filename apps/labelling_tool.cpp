@@ -1,15 +1,19 @@
-#include <hl_communication/utils.h>
+﻿#include <hl_communication/utils.h>
 #include <hl_labelling/labelling_window.h>
 #include <rhoban_utils/util.h>
 #include <tclap/CmdLine.h>
 #include <locale>
+#include <opencv2/calib3d.hpp>
 
 #include <iostream>
+#include <deque>
+#include <map>
 
 using namespace hl_monitoring;
 using namespace hl_labelling;
 
-void importLabels(const std::string& path, LabellingManager* label_manager, bool video_input)
+void importLabels(const std::string& path, LabellingManager* label_manager, bool video_input,
+                  unsigned int min_frames_between_labels = 0)
 {
   if (video_input)
   {
@@ -21,6 +25,31 @@ void importLabels(const std::string& path, LabellingManager* label_manager, bool
   {
     hl_communication::GameLabelCollection labels;
     hl_communication::readFromFile(path, &labels);
+
+    if (min_frames_between_labels != 0)
+    {
+      for (int movie_index = 0; movie_index < labels.movies_size(); movie_index++)
+      {
+        auto* mut_movie = labels.mutable_movies(movie_index);
+        auto collections_copy = mut_movie->label_collections();
+        mut_movie->clear_label_collections();
+
+        for (const auto& labels_collection : collections_copy)
+        {
+          auto new_collection = mut_movie->add_label_collections();
+          int last_frame_index = -1;
+          for (const auto& label : labels_collection.labels())
+          {
+            if ((label.frame_index() - last_frame_index > min_frames_between_labels) || last_frame_index == -1)
+            {
+              auto* l = new_collection->add_labels();
+              l->MergeFrom(label);
+              last_frame_index = label.frame_index();
+            }
+          }
+        }
+      }
+    }
     label_manager->importLabels(labels);
   }
 }
@@ -54,6 +83,21 @@ int main(int argc, char** argv)
   TCLAP::SwitchArg video_output_arg("", "video_output",
                                     "Place all labels in output file, not only the one from current video", cmd);
   TCLAP::SwitchArg video_input_arg("", "video-input", "Input labels are 'merged labels'", cmd);
+
+  TCLAP::SwitchArg export_csv_arg(
+      "", "csv", "Produce a csv in output file containing the data an estimate trajectory based on labels.", cmd);
+  TCLAP::ValueArg<unsigned int> min_frames_between_two_labels_arg("", "min-frames-between-labels",
+                                                                  "discard some labels to have a given minimum "
+                                                                  "number "
+                                                                  "of "
+                                                                  "frames "
+                                                                  "between two of them",
+                                                                  false, 0, "uint", cmd);
+  TCLAP::ValueArg<unsigned int> first_frame_arg("", "csv-first-frame", "Starting frame index to export into csv file",
+                                                false, 0, "uint", cmd);
+  TCLAP::ValueArg<unsigned int> nb_frames_arg("", "csv-nb-frames", "Total frames to export into csv file", false, 0,
+                                              "uint", cmd);
+
   cmd.parse(argc, argv);
 
   // First of all, check if -o has a risk of overriding a file
@@ -98,12 +142,14 @@ int main(int argc, char** argv)
 
   if (edit_arg.isSet())
   {
-    importLabels(edit_arg.getValue(), &window.labelling_manager, video_input_arg.getValue());
+    importLabels(edit_arg.getValue(), &window.labelling_manager, video_input_arg.getValue(),
+                 min_frames_between_two_labels_arg.getValue());
   }
 
   for (const std::string& label_path : input_arg.getValue())
   {
-    importLabels(label_path, &window.labelling_manager, video_input_arg.getValue());
+    importLabels(label_path, &window.labelling_manager, video_input_arg.getValue(),
+                 min_frames_between_two_labels_arg.getValue());
   }
 
   if (!clear_robot_arg.isSet())
@@ -145,8 +191,6 @@ int main(int argc, char** argv)
     window.labelling_manager.analyze(&std::cout);
   }
 
-  window.run();
-  bool write_data = false;
   std::string output_path = "";
   if (output_arg.isSet())
   {
@@ -156,6 +200,117 @@ int main(int argc, char** argv)
   {
     output_path = edit_arg.getValue();
   }
+
+  if (export_csv_arg.isSet())
+  {
+    std::string current_mode = "LINEAR_INTERPOLATION";
+    std::vector<cv::Point3f> field_points;
+
+    std::vector<cv::Point2f> projected_field_points;
+    auto manual_poses = window.labelling_manager.managers[source_id].getManualPoses();
+
+    std::ofstream csv(output_path, std::ios::out);
+    auto labels = window.labelling_manager.managers[source_id].getLabels();
+
+    // construct header
+    csv << "time_us,interpolation_mode,frame_id,cam_status,is_annotation_frame"
+        << ",camera_estimate_translation_x,camera_estimate_translation_y,camera_estimate_translation_z"
+        //        <<
+        //        ",camera_estimate_rotation_q0,camera_estimate_rotation_q1,camera_estimate_rotation_q3,camera_estimate_"
+        << ",camera_estimate_roll,camera_estimate_pitch,camera_estimate_yaw";
+    for (auto&& [type, p] : window.field.getPointsOfInterest())
+    {
+      csv << ',' << type << "_x";
+      csv << ',' << type << "_y";
+      field_points.push_back(p);
+    }
+
+    csv << '\n';  // END header
+
+    cv::Mat camera_matrix, distortion_coeffs, rvec, tvec;
+    cv::Size size;
+
+    intrinsicToCV(window.getMetaInformation().camera_parameters(), &camera_matrix, &distortion_coeffs, &size);
+
+    // extract data based on labels
+    uint nb_frames = window.provider->getNbFrames();
+    if (nb_frames_arg.getValue() != 0)
+      nb_frames = std::min(nb_frames, nb_frames_arg.getValue());
+
+    std::cout << "Export CSV, " << nb_frames << " frames...\n";
+
+    for (uint frame_id = first_frame_arg.getValue(); frame_id < nb_frames; ++frame_id)
+    {
+      // load current frame data
+      auto time = window.getMetaInformation().frames(frame_id).utc_ts();
+      auto camera_status = window.getMetaInformation().frames(frame_id).status();
+
+      hl_communication::CameraMetaInformation camera_information = window.calibrated_img.getCameraInformation();
+      auto cam_pos = window.labelling_manager.getCameraPose(source_id, time);
+
+      Eigen::Vector3d src_in_dst = cam_pos * Eigen::Vector3d::Zero();
+      auto pose = camera_information.mutable_pose();
+      pose->clear_rotation();
+      pose->clear_translation();
+      Eigen::Vector3d t = Eigen::Affine3d(cam_pos.rotation().inverse()) * src_in_dst;
+
+      Eigen::Quaterniond q(cam_pos.linear());
+      //      pose->add_rotation(q.w());
+      //      pose->add_rotation(q.x());
+      //      pose->add_rotation(q.y());
+      //      pose->add_rotation(q.z());
+      auto euler = q.toRotationMatrix().eulerAngles(0, 1, 2);
+      pose->add_rotation(euler[0]);
+      pose->add_rotation(euler[1]);
+      pose->add_rotation(euler[2]);
+      pose->add_translation(-t(0));
+      pose->add_translation(-t(1));
+      pose->add_translation(-t(2));
+      bool is_annotation_frame = labels.begin()->second.frame_index() == frame_id;
+      if (is_annotation_frame)
+      {
+        labels.erase(labels.begin());
+      }
+
+      // write current frame data
+      csv << time << ',' << current_mode << ',' << frame_id << ',' << camera_status << ',' << is_annotation_frame;
+      // cam translation
+      csv << ',' << camera_information.pose().translation(0) << ',' << camera_information.pose().translation(1) << ','
+          << camera_information.pose().translation(2);
+      // cam rotation
+      csv << ',' << camera_information.pose().rotation(0) << ',' << camera_information.pose().rotation(1) << ','
+          << camera_information.pose().rotation(2);  // << ',' << camera_information.pose().rotation(3);
+
+      // reprojected field points
+      pose3DToCV(camera_information.pose(), &rvec, &tvec);
+      for (auto& p : field_points)
+      {
+        if (not hl_communication::isPointValidForCorrection(p, rvec, tvec, camera_matrix, distortion_coeffs))
+        {
+          std::cerr << "error invalid point\n";
+          continue;
+        }
+      }
+      // keep points also if outside
+
+      cv::projectPoints(field_points, rvec, tvec, camera_matrix, distortion_coeffs, projected_field_points);
+
+      for (auto& p : projected_field_points)
+        csv << ',' << p.x << ',' << p.y;
+
+      projected_field_points.clear();
+      csv << '\n';  // END frame
+
+      std::cout << "frame " << (frame_id + 1) - first_frame_arg.getValue() << "/"
+                << nb_frames - first_frame_arg.getValue() << " done.\n";
+    }
+
+    csv.close();
+    exit(0);
+  }
+
+  window.run();
+  bool write_data = false;
 
   if (video_output_arg.getValue())
   {

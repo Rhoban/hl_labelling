@@ -80,6 +80,11 @@ public:
    */
   void analyze(std::ostream* out) const;
 
+  /**
+   * Each source has its own LabellingManager
+   */
+  std::map<hl_communication::VideoSourceID, VideoLabellingManager> managers;
+
 private:
   /**
    * Updates poses for all video labelling manager
@@ -101,11 +106,6 @@ private:
    */
   void push(const hl_communication::VideoSourceID& source_id, const hl_communication::LabelMsg& label,
             bool update_histories);
-
-  /**
-   * Each source has its own LabellingManager
-   */
-  std::map<hl_communication::VideoSourceID, VideoLabellingManager> managers;
 
   /**
    * Position of the balls in the field based on provided history

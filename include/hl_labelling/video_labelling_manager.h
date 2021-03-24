@@ -50,6 +50,15 @@ public:
   std::map<int, std::vector<hl_communication::RobotMessage>> getRobotLabels() const;
 
   /**
+   * Extract the field matches ordered by frame_index
+   */
+  std::map<int, std::vector<hl_communication::Match2D3DMsg>> getFieldMatches() const;
+
+  std::map<int, hl_communication::LabelMsg> getLabels() const;
+
+  std::map<int, Eigen::Affine3d> getManualPoses() const;
+
+  /**
    * Return the pose of the camera in field referential based on two elements:
    * - Manual pose provided by tagging
    * - Camera relative poses (estimated by robot,imu,etc..)

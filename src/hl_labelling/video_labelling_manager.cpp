@@ -310,6 +310,29 @@ std::map<int, std::vector<hl_communication::RobotMessage>> VideoLabellingManager
   return result;
 }
 
+std::map<int, std::vector<Match2D3DMsg>> VideoLabellingManager::getFieldMatches() const
+{
+  std::map<int, std::vector<hl_communication::Match2D3DMsg>> result;
+  for (const auto& entry : labels)
+  {
+    for (const Match2D3DMsg& match : entry.second.field_matches())
+    {
+      result[entry.first].push_back(match);
+    }
+  }
+  return result;
+}
+
+std::map<int, LabelMsg> VideoLabellingManager::getLabels() const
+{
+  return labels;
+}
+
+std::map<int, Eigen::Affine3d> VideoLabellingManager::getManualPoses() const
+{
+  return manual_poses;
+}
+
 void VideoLabellingManager::summarize(std::ostream* out) const
 {
   *out << "metainfo: " << meta_information.frames_size() << " frames" << std::endl;
