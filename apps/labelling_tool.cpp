@@ -13,7 +13,7 @@ using namespace hl_monitoring;
 using namespace hl_labelling;
 
 void importLabels(const std::string& path, LabellingManager* label_manager, bool video_input,
-                  unsigned int min_frames_between_labels = 0)
+                  unsigned int min_frames_between_labels = 0, unsigned int nb_annotations_to_keep = 0)
 {
   if (video_input)
   {
@@ -37,6 +37,7 @@ void importLabels(const std::string& path, LabellingManager* label_manager, bool
         for (const auto& labels_collection : collections_copy)
         {
           auto new_collection = mut_movie->add_label_collections();
+          unsigned int nb_annotation = 0;
           int last_frame_index = -1;
           for (const auto& label : labels_collection.labels())
           {
@@ -45,7 +46,10 @@ void importLabels(const std::string& path, LabellingManager* label_manager, bool
               auto* l = new_collection->add_labels();
               l->MergeFrom(label);
               last_frame_index = label.frame_index();
+              nb_annotation += 1;
             }
+            if (nb_annotations_to_keep > 0 && nb_annotation == nb_annotations_to_keep)
+              break;
           }
         }
       }
@@ -97,6 +101,9 @@ int main(int argc, char** argv)
                                                 false, 0, "uint", cmd);
   TCLAP::ValueArg<unsigned int> nb_frames_arg("", "csv-nb-frames", "Total frames to export into csv file", false, 0,
                                               "uint", cmd);
+  TCLAP::ValueArg<unsigned int> nb_labels_to_keep_arg("", "nb-labels-to-keep", "Remove exceeding labels from input",
+                                                      false, 0, "uint", cmd);
+  TCLAP::SwitchArg skip_manual_edit_arg("", "skip-manual-edit", "Skip manual editing phase", cmd);
 
   cmd.parse(argc, argv);
 
@@ -143,13 +150,13 @@ int main(int argc, char** argv)
   if (edit_arg.isSet())
   {
     importLabels(edit_arg.getValue(), &window.labelling_manager, video_input_arg.getValue(),
-                 min_frames_between_two_labels_arg.getValue());
+                 min_frames_between_two_labels_arg.getValue(), nb_labels_to_keep_arg.getValue());
   }
 
   for (const std::string& label_path : input_arg.getValue())
   {
     importLabels(label_path, &window.labelling_manager, video_input_arg.getValue(),
-                 min_frames_between_two_labels_arg.getValue());
+                 min_frames_between_two_labels_arg.getValue(), nb_labels_to_keep_arg.getValue());
   }
 
   if (!clear_robot_arg.isSet())
@@ -309,7 +316,8 @@ int main(int argc, char** argv)
     exit(0);
   }
 
-  window.run();
+  if (!skip_manual_edit_arg.getValue())
+    window.run();
   bool write_data = false;
 
   if (video_output_arg.getValue())
