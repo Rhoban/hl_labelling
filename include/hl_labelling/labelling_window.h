@@ -9,10 +9,12 @@ class LabellingWindow : public hl_monitoring::ReplayViewer
 public:
   LabellingWindow(std::unique_ptr<hl_monitoring::ReplayImageProvider> manager, const std::string& window_name,
                   bool moving_frames_only);
+  LabellingWindow(std::unique_ptr<hl_monitoring::ReplayImageProvider> manager, const std::string& window_name,
+                  bool moving_frames_only, const std::string& field_json_path);
 
   void paintImg() override;
   void startPoseCalibration();
-
+  void writeField(const std::string& field);
   LabellingManager labelling_manager;
 
 protected:

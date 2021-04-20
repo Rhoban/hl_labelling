@@ -97,7 +97,7 @@ private:
   void syncBalls();
 
   /**
-   * Updates the positon of the robots based on labels
+   * Updates the position of the robots based on labels
    */
   void syncRobots();
 

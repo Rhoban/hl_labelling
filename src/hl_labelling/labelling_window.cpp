@@ -20,7 +20,8 @@ using namespace hl_monitoring;
 namespace hl_labelling
 {
 LabellingWindow::LabellingWindow(std::unique_ptr<hl_monitoring::ReplayImageProvider> provider_,
-                                 const std::string& window_name, bool moving_frames_only_)
+                                 const std::string& window_name, bool moving_frames_only_,
+                                 const std::string& field_json_path = "")
   : ReplayViewer(std::move(provider_), window_name, false)
   , labelling_manager(field.ball_radius)
   , view_mode(MODE_ALL)
@@ -44,6 +45,16 @@ LabellingWindow::LabellingWindow(std::unique_ptr<hl_monitoring::ReplayImageProvi
   cv::createTrackbar(
       "teamID", window_name, &team_id, 30,
       [](int new_value, void* ptr) { ((LabellingWindow*)ptr)->updateTeamID(new_value); }, this);
+
+  if (field_json_path != "")
+  {
+    Json::Value content;
+    Json::Reader reader;
+    std::ifstream file(field_json_path);
+    if (!reader.parse(file, content, true))
+      std::cout << "Couldn't parse json field configuration file : " << reader.getFormattedErrorMessages();
+    field.fromJson(content);
+  }
 }
 
 void LabellingWindow::updateTime()
@@ -128,6 +139,15 @@ void LabellingWindow::startPoseCalibration()
     labelling_manager.push(getSourceId(), label);
     labelling_manager.pushManualPose(getSourceId(), frame_index, camera_from_world);
   }
+}
+
+void LabellingWindow::writeField(const std::string& path)
+{
+  std::ofstream output;
+  output.open(path);
+  // todo: fix float imprecision problem
+  output << field.toJson();
+  output.close();
 }
 
 void LabellingWindow::treatMouseEvent(int event, int x, int y, int flags)

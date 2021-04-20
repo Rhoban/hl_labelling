@@ -1,5 +1,6 @@
 ﻿#include <hl_communication/utils.h>
 #include <hl_labelling/labelling_window.h>
+#include <hl_monitoring/field.h>
 #include <rhoban_utils/util.h>
 #include <tclap/CmdLine.h>
 #include <locale>
@@ -104,7 +105,14 @@ int main(int argc, char** argv)
   TCLAP::ValueArg<unsigned int> nb_labels_to_keep_arg("", "nb-labels-to-keep", "Remove exceeding labels from input",
                                                       false, 0, "uint", cmd);
   TCLAP::SwitchArg skip_manual_edit_arg("", "skip-manual-edit", "Skip manual editing phase", cmd);
-
+  TCLAP::ValueArg<std::string> input_field_path("", "field-path",
+                                                "If specified, will import field parameters (size and shape) from the "
+                                                "provided json",
+                                                false, "", "", cmd);
+  TCLAP::ValueArg<std::string> output_field_path("", "output-field-path",
+                                                 "If specified, will export field parameters (size and shape) to the "
+                                                 "provided json path",
+                                                 false, "", "", cmd);
   cmd.parse(argc, argv);
 
   // First of all, check if -o has a risk of overriding a file
@@ -145,8 +153,13 @@ int main(int argc, char** argv)
 
   std::unique_ptr<ReplayImageProvider> image_provider(new ReplayImageProvider(video_path, metadata_path));
   hl_communication::VideoSourceID source_id = image_provider->getMetaInformation().source_id();
-  LabellingWindow window(std::move(image_provider), "calibration_tool", !all_frames_arg.getValue());
+  LabellingWindow window(std::move(image_provider), "calibration_tool", !all_frames_arg.getValue(),
+                         input_field_path.getValue());
 
+  if (output_field_path.isSet())
+  {
+    window.writeField(output_field_path.getValue());
+  }
   if (edit_arg.isSet())
   {
     importLabels(edit_arg.getValue(), &window.labelling_manager, video_input_arg.getValue(),
@@ -318,7 +331,6 @@ int main(int argc, char** argv)
 
   if (!skip_manual_edit_arg.getValue())
     window.run();
-  bool write_data = false;
 
   if (video_output_arg.getValue())
   {
