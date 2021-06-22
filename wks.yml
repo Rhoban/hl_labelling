@@ -1,0 +1,3 @@
+deps:
+  - rhoban/hl_monitoring
+  - rhoban/robot_model
