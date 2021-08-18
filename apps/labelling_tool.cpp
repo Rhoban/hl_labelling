@@ -1,4 +1,6 @@
-﻿#include <hl_communication/utils.h>
+﻿#include <hl_monitoring/manual_pose_solver.h>
+
+#include <hl_communication/utils.h>
 #include <hl_labelling/labelling_window.h>
 #include <hl_monitoring/field.h>
 #include <rhoban_utils/util.h>
@@ -113,8 +115,18 @@ int main(int argc, char** argv)
                                                  "If specified, will export field parameters (size and shape) to the "
                                                  "provided json path",
                                                  false, "", "", cmd);
+  TCLAP::ValueArg<unsigned int> pnp_method_arg("", "pnp-method",
+                                               "Method used to get poses from matches :\n0"
+                                               "default->cv::SOLVEPNP_ITERATIVE\n"
+                                               "1->cv::SOLVEPNP_P3P \n "
+                                               "2->cv::SOLVEPNP_AP3P \n "
+                                               "3->cv::SOLVEPNP_EPNP \n"
+                                               "4->cv::SOLVEPNP_DLS \n "
+                                               "5->cv::SOLVEPNP_UPNP \n "
+                                               "6->cv::SOLVEPNP_IPPE \n"
+                                               "7->cv::SOLVEPNP_IPPE_SQUARE ",
+                                               false, 0, " uint ", cmd);
   cmd.parse(argc, argv);
-
   // First of all, check if -o has a risk of overriding a file
   if (output_arg.isSet() && rhoban_utils::file_exists(output_arg.getValue()))
   {
@@ -136,7 +148,11 @@ int main(int argc, char** argv)
     std::cerr << "Either specify 'video & metadata' or 'robot_prefix'" << std::endl;
     exit(-1);
   }
+
+  ManualPoseSolver::setPnpMethod(pnp_method_arg.getValue());
+
   std::string video_path, metadata_path;
+
   if (robot_prefix_arg.isSet())
   {
     std::string robot_prefix = robot_prefix_arg.getValue();
@@ -220,6 +236,7 @@ int main(int argc, char** argv)
   {
     output_path = edit_arg.getValue();
   }
+  std::cout << "outputing to " << output_path << std::endl;
 
   if (export_csv_arg.isSet())
   {
@@ -329,9 +346,10 @@ int main(int argc, char** argv)
     exit(0);
   }
 
+  std::cout << "Starting" << std::endl;
   if (!skip_manual_edit_arg.getValue())
     window.run();
-
+  std::cout << "Ending" << std::endl;
   if (video_output_arg.getValue())
   {
     hl_communication::MovieLabelCollection video_labels;
