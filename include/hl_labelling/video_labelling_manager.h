@@ -1,6 +1,7 @@
 #pragma once
 #include <hl_communication/labelling.pb.h>
 #include <hl_communication/camera.pb.h>
+#include <hl_monitoring/field.h>
 #include <rhoban_utils/history/history.h>
 
 namespace hl_labelling
@@ -57,6 +58,12 @@ public:
   Eigen::Affine3d getCorrectedCameraPose(uint64_t timestamp);
 
   const hl_communication::VideoMetaInformation& getMetaInformation() const;
+
+  /**
+   * Uses the pose from metadata to identify the matches that should be visible and return them
+   */
+  std::vector<hl_communication::Match2D3DMsg> guessPOIMatchesFromMetaData(int frame_index,
+                                                                          const hl_monitoring::Field& f);
 
   /**
    * Synchronize the poses of the camera with the field_matches

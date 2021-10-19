@@ -96,6 +96,29 @@ const hl_communication::VideoMetaInformation& VideoLabellingManager::getMetaInfo
   return meta_information;
 }
 
+std::vector<hl_communication::Match2D3DMsg> VideoLabellingManager::guessPOIMatchesFromMetaData(int frame_index,
+                                                                                               const Field& f)
+{
+  std::vector<hl_communication::Match2D3DMsg> matches;
+  const std::map<std::string, cv::Point3f>& poi = f.getPointsOfInterest();
+  CameraMetaInformation camera_information;
+  camera_information.mutable_camera_parameters()->CopyFrom(meta_information.camera_parameters());
+  camera_information.mutable_pose()->CopyFrom(meta_information.frames(frame_index).pose());
+  for (const auto& entry : poi)
+  {
+    const cv::Point3f& field_pos = entry.second;
+    cv::Point2f img_pos;
+    bool success = fieldToImg(field_pos, camera_information, &img_pos);
+    if (!success)
+      continue;
+    hl_communication::Match2D3DMsg match;
+    cvToProtobuf(field_pos, match.mutable_obj_pos());
+    cvToProtobuf(img_pos, match.mutable_img_pos());
+    matches.push_back(match);
+  }
+  return matches;
+}
+
 void VideoLabellingManager::syncPoses()
 {
   // TODO: currently done automatically

@@ -110,6 +110,14 @@ void LabellingManager::importMetaData(const hl_communication::VideoMetaInformati
   managers[meta_information.source_id()].importMetaData(meta_information);
 }
 
+hl_communication::VideoMetaInformation
+LabellingManager::exportMetaData(const hl_communication::VideoSourceID& source_id)
+{
+  hl_communication::VideoMetaInformation metadata;
+  managers.at(source_id).exportCorrectedCamera(&metadata);
+  return metadata;
+}
+
 Eigen::Affine3d LabellingManager::getCameraPose(const hl_communication::VideoSourceID& source_id, uint64_t utc_ts)
 {
   return managers.at(source_id).getCorrectedCameraPose(utc_ts);

@@ -52,6 +52,7 @@ public:
    * Imports the metadata of a video in order to provide relative history to its source.
    */
   void importMetaData(const hl_communication::VideoMetaInformation& meta_information);
+  hl_communication::VideoMetaInformation exportMetaData(const hl_communication::VideoSourceID& source_id);
 
   Eigen::Affine3d getCameraPose(const hl_communication::VideoSourceID& source_id, uint64_t utc_ts);
 

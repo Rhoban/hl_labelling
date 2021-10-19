@@ -37,6 +37,10 @@ int main(int argc, char** argv)
                                          cmd);
   TCLAP::ValueArg<std::string> metadata_arg("m", "metadata", "Metadata of the video to be labelled", false, "metadata",
                                             "metadata", cmd);
+  TCLAP::ValueArg<std::string> metadata_output_arg("", "metadata-output",
+                                                   "When enabled, the resulting history is written to the provided "
+                                                   "file",
+                                                   false, "metadata_output.pb", "metadata-out", cmd);
   TCLAP::ValueArg<std::string> robot_prefix_arg("", "robot-prefix",
                                                 "Uses robot_prefix to find the appropriate files for metadata and "
                                                 "video",
@@ -146,7 +150,6 @@ int main(int argc, char** argv)
   }
 
   window.run();
-  bool write_data = false;
   std::string output_path = "";
   if (output_arg.isSet())
   {
@@ -168,5 +171,10 @@ int main(int argc, char** argv)
     hl_communication::GameLabelCollection game_labels;
     window.labelling_manager.exportLabels(&game_labels);
     hl_communication::writeToFile(output_path, game_labels);
+  }
+  if (metadata_output_arg.isSet())
+  {
+    hl_communication::VideoMetaInformation new_metadata = window.labelling_manager.exportMetaData(source_id);
+    hl_communication::writeToFile(metadata_output_arg.getValue(), new_metadata);
   }
 }
