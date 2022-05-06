@@ -24,5 +24,5 @@ target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
 target_link_libraries(${PROJECT_NAME} PUBLIC hl_monitoring robot_model)
 
 add_executable(labelling_tool apps/labelling_tool.cpp)
-target_link_libraries(labelling_tool ${catkin_LIBRARIES} ${PROJECT_NAME})
+target_link_libraries(labelling_tool ${catkin_LIBRARIES} ${PROJECT_NAME} tclap)
 
